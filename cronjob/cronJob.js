@@ -19,12 +19,14 @@ const syncAllCalendars = async () => {
       const newAccessToken = await refreshAccessToken(refreshToken);
       await updateAccessToken(user_id, newAccessToken);
 
-      await syncGoogleCalendarWithDatabase(newAccessToken); 
+      // ✅ agora passa userId + token
+      await syncGoogleCalendarWithDatabase(user_id, newAccessToken);
     }
   }
 };
 
-cron.schedule("5 * * * *", async () => {
+
+cron.schedule("* * * * *", async () => {
   try {
     await syncAllCalendars();
   } catch (error) {}

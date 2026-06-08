@@ -18,12 +18,17 @@ const getAllAccessToken = async () => {
 
 const refreshAccessToken = async (refreshToken) => {
   try {
-    const { tokens } = await oauth2Client.refreshToken(refreshToken);
-    if (tokens && tokens.access_token) {
-      return tokens.access_token;
-    }
-  } catch (error) {}
+    // É importante setar as credenciais antes de dar o refresh
+    oauth2Client.setCredentials({ refresh_token: refreshToken });
+    
+    const { credentials } = await oauth2Client.refreshAccessToken();
+    return credentials.access_token;
+  } catch (error) {
+    console.error("Erro ao renovar token:", error);
+    return null;
+  }
 };
+
 const updateAccessToken = async (userId, newAccessToken) => {
   try {
     const user = await User.findByPk(userId);

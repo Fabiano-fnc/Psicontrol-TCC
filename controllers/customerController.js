@@ -1,5 +1,7 @@
 const { Customer, User, Event, CustomersBillingRecords } = require("../models");
 const { formatDateIso, calculateAge } = require("../utils/dateUtils");
+const { updateConsultationDays } = require("../utils/updateConsultationDays");
+
 
 exports.upsertCustomer = async (userId, customerData) => {
   const {
@@ -233,18 +235,30 @@ exports.linkCustomerToEvent = async (req, res) => {
   const { eventId, customer_id } = req.body;
   const userId = req.user.user_id;
 
-  const event = await Event.findOne({
-    where: { customers_id: eventId, user_id: userId },
-  });
+  try {
+    const event = await Event.findOne({
+      where: { customers_id: eventId, user_id: userId },
+    });
 
-  if (!event) {
-    return res.status(404).json({ error: "Evento não encontrado." });
+    if (!event) {
+      return res.status(404).json({ error: "Evento não encontrado." });
+    }
+
+    // 1. Vincula o paciente ao evento
+    event.customer_id = customer_id;
+    await event.save();
+
+    // 2. O PULO DO GATO: Atualiza o faturamento/dias de consulta 
+    // agora que o evento tem um dono oficial!
+    if (typeof updateConsultationDays === "function") {
+       await updateConsultationDays(customer_id);
+    }
+
+    res.status(200).json({ 
+      message: "Paciente vinculado e faturamento atualizado com sucesso!" 
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Erro ao vincular paciente." });
   }
-
-  event.customer_id = customer_id;
-  await event.save();
-
-  res
-    .status(200)
-    .json({ message: "Paciente vinculado com sucesso ao evento!" });
 };

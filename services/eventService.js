@@ -1,4 +1,40 @@
 const { Event } = require("../models/eventModel");
+const { CustomersBillingRecords } = require("../models");
+
+const updateBillingFromEvent = async (event) => {
+  if (!event.customer_id || !event.date) return;
+
+  const [year, month, day] = event.date.split("-");
+  const monthAndYear = `${year}-${month}`;
+
+  const billing = await CustomersBillingRecords.findOne({
+    where: {
+      customer_id: event.customer_id,
+      month_and_year: monthAndYear,
+    },
+  });
+
+  if (!billing) {
+    await CustomersBillingRecords.create({
+      customer_id: event.customer_id,
+      month_and_year: monthAndYear,
+      consultation_days: day,
+    });
+    return;
+  }
+
+  const days = billing.consultation_days
+    ? billing.consultation_days.split(",").map(d => d.trim())
+    : [];
+
+  if (!days.includes(day)) {
+    days.push(day);
+    await billing.update({
+      consultation_days: days.join(", "),
+    });
+  }
+};
+
 
 exports.createEvent = async (event) => {
   try {
@@ -34,14 +70,27 @@ exports.cancelEventByGoogleId = async (googleEventId) => {
 
 exports.saveEvent = async (eventData) => {
   try {
-    return await Event.create(eventData);
-  } catch (error) {}
+    const event = await Event.create(eventData);
+    await updateBillingFromEvent(event);
+    return event;
+  } catch (error) {
+    throw error;
+  }
 };
+
 
 exports.updateEvent = async (eventData) => {
   try {
-    const [affectedRows] = await Event.update(eventData, {
+    await Event.update(eventData, {
       where: { google_event_id: eventData.google_event_id },
     });
-  } catch (error) {}
+
+    const event = await Event.findOne({
+      where: { google_event_id: eventData.google_event_id },
+    });
+
+    await updateBillingFromEvent(event);
+  } catch (error) {
+    throw error;
+  }
 };

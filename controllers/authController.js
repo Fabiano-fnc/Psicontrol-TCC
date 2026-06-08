@@ -48,8 +48,12 @@ const fetchGoogleCalendarEvents = async (accessToken, calendarId) => {
   }));
 };
 
-const syncGoogleCalendarWithDatabase = async (accessToken) => {
+const syncGoogleCalendarWithDatabase = async (userId, accessToken) => {
   try {
+    if (!userId || !accessToken) {
+      throw new Error("userId ou accessToken ausente na sincronização");
+    }
+
     oauth2Client.setCredentials({ access_token: accessToken });
     const calendars = await fetchGoogleCalendars(accessToken);
 
@@ -66,7 +70,7 @@ const syncGoogleCalendarWithDatabase = async (accessToken) => {
         await Calendar.create({
           calendar_id: calendarId,
           calendar_name: calendar.summary,
-          user_id: user.user_id,
+          user_id: userId,
           enabled: false,
         });
       }
@@ -80,7 +84,6 @@ const syncGoogleCalendarWithDatabase = async (accessToken) => {
       });
 
       const unmatchedEvents = [];
-
       const processedEvents = new Set();
 
       for (const event of events) {
@@ -108,6 +111,13 @@ const syncGoogleCalendarWithDatabase = async (accessToken) => {
         const bestMatch = result.length > 0 ? result[0].item : null;
         const customerId = bestMatch ? bestMatch.customer_id : null;
 
+        console.log("EVENT SUMMARY:", summary);
+        console.log("CLEANED SUMMARY:", cleanedSummary);
+        console.log("FUSE RESULT:", result);
+        console.log("CUSTOMER ID:", customerId);
+
+        
+
         let startDate = null,
           startTime = null,
           endTime = null;
@@ -119,14 +129,14 @@ const syncGoogleCalendarWithDatabase = async (accessToken) => {
             startTime = dateTime.split("T")[1].split(":").slice(0, 2).join(":");
 
             if (event.end && event.end.dateTime) {
-              endTime = event.end.dateTime
-                .split("T")[1]
-                .split(":")
-                .slice(0, 2)
-                .join(":");
-            } else {
-              endTime = startTime;
-            }
+            endTime = event.end.dateTime
+              .split("T")[1]
+              .split(":")
+              .slice(0, 2)
+              .join(":");
+          } else {
+            endTime = startTime;
+          }
           }
         } else if (event.start && event.start.date) {
           startDate = event.start.date;
@@ -135,33 +145,33 @@ const syncGoogleCalendarWithDatabase = async (accessToken) => {
         }
 
         if (customerId) {
-          if (eventExists) {
-            await Event.update(
-              {
+        if (eventExists) {
+          await Event.update(
+            {
                 event_name: event.summary,
-                date: startDate,
-                status: event.status,
-                calendar_id: calendarId,
-                start_time: startTime,
-                end_time: endTime,
-                user_id: user.user_id,
-                customer_id: customerId,
-              },
-              { where: { google_event_id: event.id } }
-            );
-          } else {
-            await Event.create({
-              event_name: event.summary,
               date: startDate,
-              google_event_id: event.id,
               status: event.status,
               calendar_id: calendarId,
               start_time: startTime,
               end_time: endTime,
+                user_id: user.user_id,
+              customer_id: customerId,
+            },
+            { where: { google_event_id: event.id } }
+          );
+        } else {
+          await Event.create({
+              event_name: event.summary,
+            date: startDate,
+            google_event_id: event.id,
+            status: event.status,
+            calendar_id: calendarId,
+            start_time: startTime,
+            end_time: endTime,
               user_id: user.user_id,
-              customer_id: null,
-            });
-          }
+              customer_id: customerId,
+          });
+        }
           await updateConsultationDays(customerId);
         } else {
           if (!eventExists) {
@@ -174,7 +184,7 @@ const syncGoogleCalendarWithDatabase = async (accessToken) => {
               start_time: startTime,
               end_time: endTime,
               user_id: user.user_id,
-              customer_id: null,
+              customer_id: customerId,
             });
           }
           unmatchedEvents.push({
@@ -215,6 +225,7 @@ const initiateGoogleAuth = (req, res) => {
 
 async function handleOAuth2Callback(req, res) {
   const { code } = req.query;
+
   if (!code) {
     return res.status(400).send("Código de autorização ausente.");
   }
@@ -252,12 +263,16 @@ async function handleOAuth2Callback(req, res) {
     user.autentication_token = authenticationToken;
     await user.save();
 
-    await syncGoogleCalendarWithDatabase(tokens.access_token);
+    await syncGoogleCalendarWithDatabase(
+      user.user_id,
+      tokens.access_token
+    );
 
     res.redirect(
       `${process.env.FRONTEND_URL}/token?token=${authenticationToken}`
     );
   } catch (error) {
+    console.error("Erro no callback OAuth:", error);
     res.status(500).send("Erro ao concluir a autenticação.");
   }
 }

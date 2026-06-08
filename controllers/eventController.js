@@ -74,6 +74,14 @@ exports.createEvent = async (req, res) => {
       ...event,
       google_event_id: googleEventId,
     });
+    
+    await syncGoogleCalendarWithDatabase(
+      req.user.access_token,
+      event.calendarId
+    );
+    
+    res.send("Evento criado com sucesso.");
+    
 
     res.send("Evento criado com sucesso.");
   } catch (error) {
@@ -149,9 +157,17 @@ const checkEventExists = async (googleEventId, calendarId) => {
 
 exports.getEvents = async (req, res) => {
   try {
-    const events = await Event.find({ where: { user_id: req.user.user_id } });
+    const events = await Event.findAll({ 
+      where: { user_id: req.user.user_id },
+      // Isso traz os dados do paciente vinculado automaticamente
+      include: [{
+        model: Customer, // Certifique-se de importar o model Customer aqui
+        attributes: ['name', 'phone'] // Campos que você quer do paciente
+      }]
+    });
     res.json(events);
   } catch (error) {
+    console.error(error);
     res.status(500).send("Erro interno do servidor.");
   }
 };

@@ -1,6 +1,104 @@
 const { Customer, CustomersBillingRecords, income } = require("../models");
 const { Op } = require("sequelize");
 
+exports.updatePartialPayment = async (req, res) => {
+  try {
+    const { customer_id, month_and_year, payment_amount } = req.body;
+
+    const billingRecord = await CustomersBillingRecords.findOne({
+      where: {
+        customer_id,
+        month_and_year,
+      },
+    });
+
+    if (!billingRecord) {
+      return res.status(404).json({
+        error: "Registro de faturamento não encontrado.",
+      });
+    }
+
+    await billingRecord.update({
+      payment_amount,
+      payment_status: "parcial",
+    });
+
+    return res.status(200).json({
+      message: "Pagamento parcial salvo com sucesso.",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "Erro ao salvar pagamento parcial.",
+    });
+  }
+};
+
+exports.confirmPayment = async (req, res) => {
+  try {
+    const { customer_id, month_and_year } = req.body;
+
+    const billingRecord = await CustomersBillingRecords.findOne({
+      where: {
+        customer_id,
+        month_and_year,
+      },
+    });
+
+    if (!billingRecord) {
+      return res.status(404).json({
+        error: "Registro de faturamento não encontrado.",
+      });
+    }
+
+    await billingRecord.update({
+      payment_status: "pago",
+      payment_date: new Date(),
+    });
+
+    return res.status(200).json({
+      message: "Pagamento confirmado com sucesso.",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "Erro ao confirmar pagamento.",
+    });
+  }
+};
+
+exports.markInvoiceSent = async (req, res) => {
+  try {
+    const { customer_id, month_and_year } = req.body;
+
+    const billingRecord = await CustomersBillingRecords.findOne({
+      where: {
+        customer_id,
+        month_and_year,
+      },
+    });
+
+    if (!billingRecord) {
+      return res.status(404).json({
+        error: "Registro não encontrado.",
+      });
+    }
+
+    await billingRecord.update({
+      sending_invoice: true,
+    });
+
+    return res.status(200).json({
+      message: "Cobrança marcada como enviada.",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      error: "Erro ao atualizar cobrança.",
+    });
+  }
+};
+
 exports.getBillingRecordsByMonthAndYear = async (req, res) => {
   const { month, year } = req.query;
 
@@ -30,9 +128,17 @@ exports.getBillingRecordsByMonthAndYear = async (req, res) => {
   });
 
   if (!billingRecords.length) {
-    return res
-      .status(404)
-      .json({ message: "Nenhum registro encontrado para este mês e ano." });
+    return res.status(200).json({
+      message:
+        "Não há consultas faturadas para este mês. Eventos não vinculados ou não confirmados não entram no faturamento.",
+      records: [],
+      totals: {
+        totalConsultations: 0,
+        totalRevenue: "0.00",
+        netRevenue: "0.00",
+        netTime: "0.00",
+      },
+    });
   }
 
   const totalConsultations = billingRecords.reduce((acc, record) => {
@@ -67,6 +173,8 @@ exports.getBillingRecordsByMonthAndYear = async (req, res) => {
     },
   });
 
+  
+
   const totalRevenueFromIncome = revenues.reduce(
     (acc, revenue) => acc + parseFloat(revenue.value || 0),
     0
@@ -93,6 +201,10 @@ exports.getBillingRecordsByMonthAndYear = async (req, res) => {
     };
   });
 
+  
+
+  
+
   res.status(200).json({
     billingRecords: formattedRecords,
     totalConsultations,
@@ -100,4 +212,8 @@ exports.getBillingRecordsByMonthAndYear = async (req, res) => {
     netRevenue: parseFloat(netRevenue).toFixed(2),
     netTime,
   });
+
+  
+
+  
 };

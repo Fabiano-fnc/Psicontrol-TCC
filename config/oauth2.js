@@ -12,8 +12,17 @@ const oauth2Client = new google.auth.OAuth2(
 );
 
 const authUrl = oauth2Client.generateAuthUrl({
-    access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/calendar', 'https://www.googleapis.com/auth/userinfo.profile', 'https://www.googleapis.com/auth/userinfo.email'], 
+  access_type: 'offline',
+  prompt: 'consent', // IMPORTANTÍSSIMO
+  scope: [
+    'https://www.googleapis.com/auth/calendar',
+    'https://www.googleapis.com/auth/calendar.calendarlist',
+    'https://www.googleapis.com/auth/calendar.events',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'https://www.googleapis.com/auth/userinfo.email'
+  ],
 });
+
+  
 
 module.exports = { oauth2Client, authUrl };
