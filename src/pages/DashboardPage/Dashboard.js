@@ -725,7 +725,11 @@ const DashBoard = () => {
                         </td>
                         <td>
                           <div className="flex items-center justify-center text-center h-full">
-                            <CrossIcon />
+                            {patient.invoice_issued ? (
+                              <VerifyGreenIcon />
+                            ) : (
+                              <CrossIcon />
+                            )}
                           </div>
                         </td>
 

@@ -5,6 +5,7 @@ const DropDownDashActions = ({
   onOpenModal,
   onPartialPayment,
   onConfirmedPayment,
+  onIssueInvoice,
 }) => {
   return (
     <nav className="absolute right-0 w-[151px] h-[131px] md:w-[234px] md:h-[204px] md:mt-3 box-border border-[1px] border-solid border-cinza6 bg-bg2 shadow-default rounded-l-md">
