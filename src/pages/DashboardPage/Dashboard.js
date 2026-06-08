@@ -376,6 +376,24 @@ const DashBoard = () => {
     setLoading(false);
     if (response.ok) {
       const data = await response.json();
+
+      await fetch(
+        `${process.env.REACT_APP_API_URL}/dashboard/mark-invoice-sent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem(
+              "authentication_token"
+            )}`,
+          },
+          body: JSON.stringify({
+            customer_id: customerId,
+            month_and_year: `${selectedYear}-${selectedMonth}`,
+          }),
+        }
+      );
+
       const whatsappLink = data.whatsappLink;
       setBillingMessage(data.user_message);
 
@@ -618,7 +636,7 @@ const DashBoard = () => {
                       Valor Consulta
                     </th>
                     <th className="text-center align-middle hidden md:table-cell min-w-[75px] border-b border-b-cinza6 text-primaria md:text-lg text-F8 font-medium tracking-tight px-2 md:px-4 py-1 md:py-2">
-                      Dias
+                      Dia(s)
                     </th>
                     <th className="text-center align-middle md:whitespace-nowrap min-w-[100px] border-b border-b-cinza6 text-primaria md:text-lg text-F8 font-medium tracking-tight px-2 md:px-4 py-1 md:py-2">
                       Nº de consultas

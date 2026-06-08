@@ -18,8 +18,13 @@ const ModalPaymentDash = ({ onClose, onSave, totalAmount }) => {
   };
 
   const parseCurrency = (value) => {
-    const numericValue = value.replace(/[^0-9]/g, "");
-    return parseFloat(numericValue) || 0;
+    return Number(
+      value
+        .replace("R$", "")
+        .trim()
+        .replace(/\./g, "")
+        .replace(",", ".")
+    );
   };
 
   const handleInputChange = (e) => {
