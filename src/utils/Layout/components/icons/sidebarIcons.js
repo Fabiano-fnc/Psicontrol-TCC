@@ -104,13 +104,13 @@ const GoogleCalendarIcon = () => {
 const BorderIcon = ({ className, isSelected }) => {
     return (
         <svg
-            className={`mr-5 ${className || ""} ${isSelected ? 'text-[#0082ba]' : 'text-white'}`}
+            className={`mr-5 ${className || ""} ${isSelected ? 'text-primaria' : 'text-white'}`}
             width="6"
             height="60"
             viewBox="0 0 6 60"
             fill="none"
             xmlns="http://www.w3.org/2000/svg">
-            <path className="fill-current group-hover:text-[#0082ba]" d="M0 0C3.31371 0 6 2.68629 6 6V54C6 57.3137 3.31371 60 0 60V0Z" />
+            <path className="fill-current group-hover:text-primaria" d="M0 0C3.31371 0 6 2.68629 6 6V54C6 57.3137 3.31371 60 0 60V0Z" />
         </svg>
     )
 }
