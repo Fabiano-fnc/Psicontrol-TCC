@@ -28,7 +28,11 @@ const Layout = () => {
 
   return (
     <div className="layout-container flex h-screen overflow-hidden relative">
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={toggleSidebar}
+        onNavigate={() => setSidebarOpen(false)}
+      />
 
       {isSidebarOpen && (
         <div

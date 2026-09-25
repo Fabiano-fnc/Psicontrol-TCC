@@ -6,8 +6,10 @@ import {
 } from "../../../icons/icons";
 import { Link } from "react-router-dom";
 
+const itemClass =
+  "group flex w-full items-center gap-2 px-6 py-2.5 text-left font-['Open Sans'] text-[15px] font-normal leading-5 tracking-normal text-texto2 underline hover:bg-clara3 hover:text-texto2/70";
+
 const DropDonw = ({
-  dropdownRef,
   customerId,
   onDelete,
   setSelectedPatient,
@@ -16,23 +18,17 @@ const DropDonw = ({
   onArchive,
 }) => {
   return (
-    <nav
-      className="absolute right-0 mt-32 box-border border-[1px] border-solid border-cinza6 bg-bg2 shadow-default"
-      ref={dropdownRef}
-    >
-      <ul className="w-[210px] h-[189px]">
+    <nav className="absolute right-0 top-full z-20 mt-1 w-[220px] rounded-md border border-solid border-cinza6 bg-bg2 py-2 shadow-default">
+      <ul>
         <li>
-          <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
-            onClick={() => <label> "Conta do paciente clicada"</label>}
-          >
+          <Link to={`/customers/${customerId}/profile`} className={itemClass}>
             <UserIconBorder />
-            <Link to={`/customers/${customerId}/profile`}> Conta do paciente </Link>
-          </button>
+            Conta do paciente
+          </Link>
         </li>
         <li>
           <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
+            className={itemClass}
             onClick={() => {
               const patient = customers.find(
                 (c) => c.customer_id === customerId
@@ -48,19 +44,13 @@ const DropDonw = ({
           </button>
         </li>
         <li>
-          <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
-            onClick={() => onDelete(customerId)}
-          >
+          <button className={itemClass} onClick={() => onDelete(customerId)}>
             <Trash />
             Excluir paciente
           </button>
         </li>
         <li>
-          <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
-            onClick={() => onArchive(customerId)}
-          >
+          <button className={itemClass} onClick={() => onArchive(customerId)}>
             <ArchiveIcon />
             Arquivar Paciente
           </button>

@@ -22,7 +22,7 @@ const menuItems = [
   { path: "/user", label: ["Minhas", "Configurações"], Icon: ConfigIcon },
 ];
 
-const Sidebar = ({ isOpen, onToggle }) => {
+const Sidebar = ({ isOpen, onToggle, onNavigate }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [selectedCalendarIds, setSelectedCalendarIds] = useState(new Set());
@@ -34,6 +34,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
   }, []);
 
   const handleProceed = () => {
+    onNavigate();
     const ids = Array.from(selectedCalendarIds);
     localStorage.setItem("selectedCalendars", JSON.stringify(ids));
     navigate(`/create-event-form?calendarIds=${ids.join(",")}`);
@@ -110,7 +111,11 @@ const Sidebar = ({ isOpen, onToggle }) => {
                     {content}
                   </button>
                 ) : (
-                  <Link to={item.path} className={linkClass}>
+                  <Link
+                    to={item.path}
+                    className={linkClass}
+                    onClick={onNavigate}
+                  >
                     {content}
                   </Link>
                 )}
