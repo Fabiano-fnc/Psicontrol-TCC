@@ -302,7 +302,7 @@ const CalendarIcon = () => {
 const VerifyIcon = () => {
   return (
     <svg
-      className="w-[10px] h-[15px] md:w-[24px] md:h-[24px]"
+      className="w-[16px] h-[16px] md:w-[24px] md:h-[24px] shrink-0"
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -380,7 +380,7 @@ const ArrowLeftIcon = () => {
 const SetaIcon = () => {
   return (
     <svg
-      className="hidden md:table-cell  w-[18px] h-[18px] md:w-[24px] md:h-[24px] "
+      className="w-[18px] h-[18px] md:w-[24px] md:h-[24px] shrink-0"
       viewBox="5 5 14 14"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

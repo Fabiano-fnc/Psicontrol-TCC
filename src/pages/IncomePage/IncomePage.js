@@ -409,30 +409,37 @@ const IncomePage = () => {
     });
   };
 
+  const itemRowClass = "mt-2 flex items-center gap-3";
+  const valueBoxClass =
+    "flex w-[120px] shrink-0 items-center justify-center rounded-[15px] border-[2px] border-cinza6 bg-neutral-100 p-2 text-sm text-gray-700 md:w-[140px] md:text-base";
+  const newInputClass =
+    "w-full min-w-0 rounded-md border border-cinza6 bg-neutral-100 p-2 text-gray-700 focus:border-cinza6 focus:outline focus:ring";
+  const deleteButtonClass =
+    "shrink-0 rounded-full p-2 text-primaria hover:bg-clara3 active:opacity-50";
+  const addButtonClass =
+    "mt-4 flex items-center rounded-md px-1 py-1 transition-shadow hover:bg-clara3 active:opacity-50";
+
   return (
-    <div className="p-6">
+    <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
       {isModalOpen && (
-        <div className="fixed inset-0 z-30 flex items-center backdrop-blur-[6px] justify-center bg-[#33B8D14D] bg-opacity-30">
-          <div className="w-[335px] h-[202px] bg-white rounded-lg border-2 border-[#81a0ae] p-6 shadow-lg transform translate-x-[117px] translate-y-[-169px]">
-            <div className="w-full text-center mx-auto mb-6">
-              <span className="text-[#5c5c5c] text-[21px] font-medium font-['Ubuntu'] tracking-tight">
-                Você tem certeza que <br />
-                deseja
-                <span className="text-[#0082ba]"> excluir </span>
-                este <br /> ítem?
-              </span>
-            </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
+          <div className="w-full max-w-[335px] rounded-lg border-2 border-cinza6 bg-white p-6 shadow-lg">
+            <p className="mb-6 text-center text-lg md:text-[21px] font-medium font-['Ubuntu'] tracking-tight text-texto2">
+              Você tem certeza que deseja
+              <span className="text-primaria"> excluir </span>
+              este ítem?
+            </p>
 
             <div className="flex justify-around">
               <button
                 onClick={closeModal}
-                className="h-10 w-[100px] bg-white border border-[#0082ba] text-[#0082ba] rounded-full text-center font-semibold hover:bg-[#e6f4f8]"
+                className="h-10 w-[100px] rounded-full border border-primaria bg-white text-center font-semibold text-primaria hover:bg-clara4"
               >
                 Não
               </button>
               <button
                 onClick={confirmDelete}
-                className="h-10 w-[100px] bg-[#0082ba] text-white rounded-full text-center font-semibold hover:bg-[#007bb8]"
+                className="h-10 w-[100px] rounded-full bg-primaria text-center font-semibold text-white hover:opacity-90"
               >
                 Sim
               </button>
@@ -441,68 +448,50 @@ const IncomePage = () => {
         </div>
       )}
 
-      <div className=" md:w-[727px] w-auto mx-auto h-auto my-[150px] bg-neutral-100 rounded-[15px] border-2 border-cinza6 p-4 shadow-md">
-        <div className="flex mb-6">
-          <div className="w-[190px]">
-            <Months
-              onMonthChange={handleMonthChange}
-              onYearChange={handleYearChange}
-              selectedMonth={selectedMonth}
-              selectedYear={selectedYear}
-              className="z-50 "
-            />
-          </div>
+      <div className="mx-auto w-full max-w-[727px] rounded-[15px] border-2 border-cinza6 bg-neutral-100 p-4 shadow-md md:mt-6 md:p-6">
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+          <Months
+            onMonthChange={handleMonthChange}
+            onYearChange={handleYearChange}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            wrapperClassName="z-20 w-full sm:w-[190px]"
+          />
 
           <button
-            className="md:w-[200px] md:h-[57.69px] w-[157px] h-[41px] shadow bg-neutral-100 drop-shadow-lastMonthShadow active:shadow-innerShadow active:opacity-75 rounded-[10px] md:ml-[50px] ml-[50px] border-2 font-['Ubuntu'] flex items-center justify-center border-primaria mt-[5px] text-primaria md:text-xs text-[10px] font-medium leading-tight"
+            className="flex h-[40px] w-full items-center justify-center rounded-[10px] border-2 border-primaria bg-neutral-100 px-4 text-center font-['Ubuntu'] text-xs font-medium leading-tight text-primaria shadow drop-shadow-lastMonthShadow hover:bg-clara4 active:opacity-75 active:shadow-innerShadow sm:w-auto md:h-[46px]"
             onClick={repeatLastMonthEntries}
           >
-            <span className="hidden md:inline text-center">
-              REPETIR LANÇAMENTO DO
-              <br />
-              MÊS ANTERIOR
-            </span>
-            <span className="inline w-auto md:hidden text-center text-[9px] leading-tight">
-              REPETIR LANÇAMENTO <br />ANTERIOR
-            </span>
+            REPETIR LANÇAMENTOS DO MÊS ANTERIOR
           </button>
         </div>
 
-
-        <div className="flex flex-wrap gap-6 z-10" style={{ maxWidth: "100%", alignItems: "flex-start" }}>
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-10">
           {/* Contêiner de Receitas */}
-          <div className="flex-1 min-w-[300px]">
-            <h2 className="text-lg text-texto1 ml-4 font-semibold mb-2">Receitas</h2>
+          <div className="min-w-0">
+            <h2 className="mb-2 text-lg font-semibold text-texto1">Receitas</h2>
             {revenues.map((revenue, index) => (
-              <div
-                key={index}
-                className="flex items-center mt-2 gap-4"
-                style={{ width: "100%", maxWidth: "400px" }}
-              >
-                <div
-                  className="flex-1 text-gray-700 pl-4 cursor-default overflow-hidden"
-                  style={{
-                    wordBreak: "break-word",
-                    whiteSpace: "normal",
-                    maxWidth: "200px",
-                  }}
-                >
-               
+              <div key={index} className={itemRowClass}>
+                <div className="min-w-0 flex-1 cursor-default break-words text-gray-700">
                   {revenue.name}
                 </div>
-                <div className="w-[140px] p-2 bg-neutral-100 text-gray-700 border-[2px] border-cinza6 rounded-[15px] cursor-default flex items-center justify-center">
+                <div className={valueBoxClass}>
                   {formatCurrency(revenue.value)}
                 </div>
                 <button
                   onClick={() => openModal(revenue.id, "revenue")}
-                  className="active:opacity-50 text-blue-500 hover:text-blue-700"
+                  className={deleteButtonClass}
+                  aria-label="Excluir receita"
                 >
                   <Trash />
                 </button>
               </div>
             ))}
             {isAddingRevenue.map((revenue, index) => (
-              <div className="flex items-center gap-4 ml-4 mt-2" key={index}>
+              <div
+                className="mt-2 grid grid-cols-[1fr_120px] gap-3 md:grid-cols-[1fr_140px]"
+                key={index}
+              >
                 <input
                   type="text"
                   placeholder="Nome da receita"
@@ -512,62 +501,53 @@ const IncomePage = () => {
                   }
                   onKeyDown={handleEnterPressRevenueName}
                   ref={revenueNameInputRef}
-                  className="w-[140px] p-2 bg-neutral-100 text-gray-700 border border-cinza6 focus:border-cinza6 focus:outline focus:ring rounded-md"
+                  className={newInputClass}
                 />
                 <input
                   type="text"
-                  placeholder="Valor da receita"
+                  inputMode="numeric"
+                  placeholder="Valor"
                   value={formatCurrency(revenue.value)}
                   onChange={(e) =>
                     updateAddingRevenue(index, "value", e.target.value)
                   }
                   onKeyDown={handleEnterPressRevenueValue}
                   ref={revenueValueInputRef}
-                  className="w-[118px] p-2 bg-neutral-100 text-gray-700 border border-cinza6 focus:border-cinza6 focus:outline focus:ring rounded-md"
+                  className={newInputClass}
                 />
               </div>
             ))}
-            <button
-              onClick={toggleAddRevenue}
-              className="flex ml-4 items-center mt-4 active:drop-shadow-lg active:opacity-50 transition-shadow"
-            >
+            <button onClick={toggleAddRevenue} className={addButtonClass}>
               <AddIcon />
-              <span className="text-primaria ml-[8px]">Adicionar item</span>
+              <span className="ml-[8px] text-primaria">Adicionar item</span>
             </button>
           </div>
 
           {/* Contêiner de Despesas */}
-          <div className="flex-1 min-w-[300px]">
-            <h2 className="text-lg text-texto1 font-semibold mb-2">Despesas</h2>
+          <div className="min-w-0">
+            <h2 className="mb-2 text-lg font-semibold text-texto1">Despesas</h2>
             {expenses.map((expense, index) => (
-              <div
-              key={index}
-              className="flex items-center mt-2 gap-4 w-full max-w-[390px] md:max-w-[300px]"
-            >
-            
-                <div
-                  className="flex-1 text-gray-700 cursor-default overflow-hidden"
-                  style={{
-                    wordBreak: "break-word",
-                    whiteSpace: "normal",
-                    maxWidth: "200px",
-                  }}
-                >
+              <div key={index} className={itemRowClass}>
+                <div className="min-w-0 flex-1 cursor-default break-words text-gray-700">
                   {expense.name}
                 </div>
-                <div className="w-[140px] p-2 bg-neutral-100 text-gray-700 border-[2px] border-cinza6 rounded-[15px] cursor-default flex items-center justify-center">
+                <div className={valueBoxClass}>
                   {formatCurrency(expense.value)}
                 </div>
                 <button
                   onClick={() => openModal(expense.id, "expense")}
-                  className="active:opacity-50 text-blue-500 hover:text-blue-700"
+                  className={deleteButtonClass}
+                  aria-label="Excluir despesa"
                 >
                   <Trash />
                 </button>
               </div>
             ))}
             {isAddingExpense.map((expense, index) => (
-              <div className="flex items-center mb-2 mt-2 gap-4" key={index}>
+              <div
+                className="mt-2 grid grid-cols-[1fr_120px] gap-3 md:grid-cols-[1fr_140px]"
+                key={index}
+              >
                 <input
                   type="text"
                   placeholder="Nome da despesa"
@@ -577,44 +557,41 @@ const IncomePage = () => {
                   }
                   onKeyDown={handleEnterPressExpenseName}
                   ref={expenseNameInputRef}
-                  className="w-[140px] p-2 bg-neutral-100 text-gray-700 border border-cinza6 focus:border-cinza6 focus:outline focus:ring rounded-md"
+                  className={newInputClass}
                 />
                 <input
                   type="text"
-                  placeholder="Valor da despesa"
+                  inputMode="numeric"
+                  placeholder="Valor"
                   value={formatCurrency(expense.value)}
                   onChange={(e) =>
                     updateAddingExpense(index, "value", e.target.value)
                   }
                   onKeyDown={handleEnterPressExpenseValue}
                   ref={expenseValueInputRef}
-                  className="w-[118px] p-2 bg-neutral-100 text-gray-700 border border-cinza6 focus:border-cinza6 focus:outline focus:ring rounded-md"
+                  className={newInputClass}
                 />
               </div>
             ))}
-            <button
-              onClick={toggleAddExpense}
-              className="flex items-center mt-4 active:drop-shadow-lg active:opacity-50 transition-shadow"
-            >
+            <button onClick={toggleAddExpense} className={addButtonClass}>
               <AddIcon />
-              <span className="text-primaria ml-[8px] whitespace-nowrap">
+              <span className="ml-[8px] whitespace-nowrap text-primaria">
                 Adicionar item
               </span>
             </button>
           </div>
         </div>
 
-
-        <div className="flex md:mr-[38px] mr-[10px] justify-end mt-4">
+        <div className="mt-8 flex justify-end gap-3">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 border w-[108px] h-[39px] item-center border-primaria text-primaria rounded-[100px] mr-2 "
+            className="h-[39px] w-[108px] rounded-[100px] border border-primaria text-primaria hover:bg-clara4"
           >
             Cancelar
           </button>
           <button
             onClick={handleClick}
-            className="px-4 py-2 w-[90px] h-[40px] bg-primaria drop-shadow-saveShadow active:drop-shadow-sm text-white rounded-[100px]"
+            className="h-[40px] w-[90px] rounded-[100px] bg-primaria text-white drop-shadow-saveShadow hover:opacity-90 active:drop-shadow-sm"
           >
             Salvar
           </button>
