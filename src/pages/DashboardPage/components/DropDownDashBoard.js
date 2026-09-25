@@ -1,24 +1,21 @@
-import React from 'react'
-import { TrashIconDash, VinculateIcon } from './IconsDashBoard';
+import React from "react";
+import { TrashIconDash, VinculateIcon } from "./IconsDashBoard";
 
-const DropDownDashBoard  = ({ onVincular, onExcluir }) => {
+const itemClass =
+  "group flex w-full items-center gap-3 px-4 py-2 text-left text-sm md:text-F15 text-texto2 font-normal font-openSans tracking-tight underline hover:bg-clara3 active:text-texto2/50";
+
+const DropDownDashBoard = ({ onVincular, onExcluir }) => {
   return (
-    <nav className="absolute md:w-[210px] md:h-[130px] h-[77px] right-0 mt-3 box-border border-[1px] border-solid border-cinza6 bg-bg2 shadow-default rounded-l-md">
-      <ul className="md:w-full w-[151px] h-full flex flex-col justify-center items-center">
-      <li className="w-full">
-          <button
-            onClick={onVincular}
-            className="group flex items-center justify-center w-full gap-2 py-2 text-texto2 active:text-texto2/50 md:text-F15 text-F9 font-normal font-openSans underline tracking-tight"
-          >
+    <nav className="w-[200px] md:w-[210px] rounded-md border border-solid border-cinza6 bg-bg2 py-2 shadow-default">
+      <ul>
+        <li>
+          <button onClick={onVincular} className={itemClass}>
             <VinculateIcon />
             <span>Vincular paciente</span>
           </button>
         </li>
-        <li className="md:w-full">
-          <button
-            onClick={onExcluir}
-            className="group flex items-center justify-center w-full md:gap-6 gap-3 py-2 text-texto2 active:text-texto2/50 md:text-F15 text-F9  font-normal font-openSans underline tracking-tight"
-          >
+        <li>
+          <button onClick={onExcluir} className={itemClass}>
             <TrashIconDash />
             <span>Excluir paciente</span>
           </button>
@@ -28,4 +25,4 @@ const DropDownDashBoard  = ({ onVincular, onExcluir }) => {
   );
 };
 
-export default DropDownDashBoard
+export default DropDownDashBoard;

@@ -3,7 +3,7 @@ import "../../../index.css";
 const CrossIcon = () => {
   return (
     <svg
-      className="w-[9px] h-[9px] md:w-[18px] md:h-[18px]"
+      className="w-[14px] h-[14px] md:w-[18px] md:h-[18px]"
       viewBox="0 0 18 18"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -38,7 +38,7 @@ const CrossIcon = () => {
 const VerifyGreenIcon = () => {
   return (
     <svg
-      className="w-[9px] h-[9px] md:w-[18px] md:h-[18px]"
+      className="w-[14px] h-[14px] md:w-[18px] md:h-[18px]"
       viewBox="0 0 18 18"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +55,7 @@ const VerifyGreenIcon = () => {
 const FilterIcon = () => {
   return (
     <svg
-      className="w-[15px] h-[15px] md:w-[25px] md:h-[22px] top-[3px] md:-ml-14 md:-mt-6 -ml-7 -mt-4"
+      className="w-[20px] h-[20px] md:w-[24px] md:h-[22px] shrink-0"
       viewBox="0 0 25 25"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -116,7 +116,7 @@ const FilterIcon = () => {
 const SendIcon = () => {
   return (
     <svg
-      className="w-[13px] h-[13px] md:w-[20px] md:h-[20px] md:mr-[6px] ml-1"
+      className="w-[18px] h-[18px] md:w-[20px] md:h-[20px] shrink-0"
       viewBox="0 0 20 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -136,7 +136,7 @@ const SendIcon = () => {
 const PartialIcon = () => {
   return (
     <svg
-      className="w-[13px] h-[13px] md:w-[21px] md:h-[20px] md:mr-[6px] md:ml-[3px] ml-1"
+      className="w-[18px] h-[18px] md:w-[21px] md:h-[20px] shrink-0"
       viewBox="0 0 21 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -152,7 +152,7 @@ const PartialIcon = () => {
 const ConfirmPaymentIcon = () => {
   return (
     <svg
-      className="w-[14px] h-[14px] md:w-[24px] md:h-[24px] md:mr-[10px] ml-1"
+      className="w-[20px] h-[20px] md:w-[24px] md:h-[24px] shrink-0"
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -170,7 +170,7 @@ const ConfirmPaymentIcon = () => {
 const VinculateIcon = () => {
   return (
     <svg
-      className="w-[10px] md:w-[23px] h-[10px] md:h-[23px] md:mr-[10px] ml-1 "
+      className="w-[18px] h-[18px] md:w-[23px] md:h-[23px] shrink-0"
       viewBox="0 0 23 23"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -194,7 +194,7 @@ const VinculateIcon = () => {
 const TrashIconDash = () => {
   return (
     <svg
-      className="w-[9px] md:w-[15px] h-[11px] md:h-[20px] md:mr-[2px] -mr-0"
+      className="w-[14px] h-[18px] md:w-[15px] md:h-[20px] shrink-0"
       viewBox="0 0 15 20"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -213,7 +213,7 @@ const CloseIconPaymentModal = () => {
       viewBox="0 0 15 15"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="md:w-[15px] w-[9.44px] md:h-[15px]  h-[9.44px] mb-6"
+      className="w-[14px] h-[14px] md:w-[15px] md:h-[15px]"
     >
       <g filter="url(#filter0_i_2137_7953)">
         <path
@@ -269,7 +269,7 @@ const CloseIconMessageModal = () => {
       viewBox="0 0 23 23"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className="md:w-[15px] md:h-[15px] w-[9.44px] h-[9.44px] md:mt-0 mb-4"
+      className="w-[14px] h-[14px] md:w-[15px] md:h-[15px]"
     >
       <g filter="url(#filter0_d_1666_7005)">
         <path

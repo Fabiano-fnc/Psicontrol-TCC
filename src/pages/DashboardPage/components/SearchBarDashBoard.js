@@ -63,15 +63,15 @@ const SearchBarDashBoard = ({ patients, onConfirmPatient, onClose }) => {
   };
 
   return (
-    <div className="relative mx-auto max-w-[90%] md:-m-64 md:ml-2 md:top-2 -top-28 ml-2 md:w-[360px] z-30">
+    <div className="relative z-30 w-full max-w-[360px]">
       <input
         type="text"
         placeholder={searchTerm ? "" : "Pesquisar paciente para vincular"}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className={`h-[35px] md:h-[56px] md:w-full w-[207px] md:rounded-[15px] rounded-lg  ${
+        className={`h-[44px] md:h-[56px] w-full rounded-lg md:rounded-[15px] ${
           searchTerm ? "md:rounded-b-none rounded-b-none" : ""
-        } bg-clara3 pl-11 text-texto2/50 md:text-base text-[11px] focus:outline-none focus:ring-0 caret-primaria`}
+        } bg-clara3 pl-11 pr-10 text-texto2 text-sm md:text-base shadow-md focus:outline-none focus:ring-0 caret-primaria`}
       />
       <div className="absolute left-2 top-1/2 -translate-y-1/2 transform">
         {searchTerm.length > 0 ? (
@@ -94,7 +94,7 @@ const SearchBarDashBoard = ({ patients, onConfirmPatient, onClose }) => {
       {searchTerm.length > 0 &&
         filteredPatients.length === 0 &&
         isDropdownVisible && (
-          <p className="absolute top-full left-0 md:w-full w-[207px] md:px-4 md:py-2 bg-clara3 rounded-b-[15px] shadow-md text-center text-[8px] md:text-[12px] text-text2/50">
+          <p className="absolute top-full left-0 w-full rounded-b-[15px] bg-clara3 px-4 py-2 text-center text-xs md:text-[12px] text-texto2 shadow-md">
             Paciente não encontrado
           </p>
         )}
@@ -102,12 +102,12 @@ const SearchBarDashBoard = ({ patients, onConfirmPatient, onClose }) => {
       {searchTerm && filteredPatients.length > 0 && (
         <ul
           ref={searchDropRef}
-          className="absolute top-full left-0 md:w-full w-[207px] bg-clara3 rounded-b-[15px] shadow-md max-h-[200px] overflow-y-auto z-10 border"
+          className="absolute top-full left-0 w-full bg-clara3 rounded-b-[15px] shadow-md max-h-[200px] overflow-y-auto z-10 border"
         >
           {filteredPatients.map((customer) => (
             <li
               key={customer.customer_id || customer.id}
-              className="px-4 py-2 hover:bg-d_medio3 cursor-pointer border-b-[1px] border-cinza6 md:text-base text-[8px]"
+              className="px-4 py-2 hover:bg-d_medio3 cursor-pointer border-b-[1px] border-cinza6 text-sm md:text-base"
               onClick={() => {
                 onConfirmPatient(customer);
               }}
