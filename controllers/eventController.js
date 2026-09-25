@@ -198,7 +198,16 @@ exports.listCalendars = async (req, res) => {
   });
 
   const calendar = google.calendar({ version: "v3", auth: oauth2Client });
-  const response = await calendar.calendarList.list();
+
+  let response;
+  try {
+    response = await calendar.calendarList.list();
+  } catch (error) {
+    console.error("Erro ao listar calendários do Google:", error.message);
+    return res.status(401).json({
+      error: "Não foi possível acessar o Google Agenda. Faça login novamente.",
+    });
+  }
 
   const googleCalendars = response.data.items;
 
