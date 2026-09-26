@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import logo from "../../../images/Psicontrol.png";
+import { clearSession } from "../../auth/session";
 import {
   HomeIcon,
   RecDespIcon,
@@ -46,7 +47,8 @@ const Sidebar = ({ isOpen, onToggle, onNavigate }) => {
   };
 
   const handleLogout = () => {
-    navigate("/");
+    clearSession();
+    navigate("/", { replace: true });
   };
 
   const isActive = (item) =>

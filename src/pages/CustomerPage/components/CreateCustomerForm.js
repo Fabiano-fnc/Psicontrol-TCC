@@ -14,6 +14,18 @@ import { showEditToast } from "../components/notiificationCustomerPage";
 import "react-toastify/dist/ReactToastify.css";
 import { createOrUpdateCustomer } from "../../../service/pagesService/pagesService";
 import { showSuccessToast } from "../components/notiificationCustomerPage";
+import {
+  onlyDigits,
+  formatDocument,
+  formatPhone,
+} from "../../../utils/format/format";
+
+// Campos guardados só com dígitos; a máscara é aplicada apenas na exibição.
+const DIGIT_FIELDS = {
+  customer_cpf_cnpj: 14,
+  alternative_cpf_cnpj: 14,
+  customer_phone: 11,
+};
 
 registerLocale(ptBR);
 
@@ -126,9 +138,16 @@ const CreateCustomerForm = ({
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    const newValue =
+      type === "checkbox"
+        ? checked
+        : name in DIGIT_FIELDS
+        ? onlyDigits(value).slice(0, DIGIT_FIELDS[name])
+        : value;
+
     setCustomer((prevState) => ({
       ...prevState,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: newValue,
     }));
   };
 
@@ -140,7 +159,29 @@ const CreateCustomerForm = ({
       startDate.getFullYear() < 1900 ||
       startDate.getFullYear() > new Date().getFullYear()
     ) {
-      showErrorToast("Data de nascimento válida");
+      showErrorToast("Informe uma data de nascimento válida.");
+      return;
+    }
+
+    const isValidDocument = (value) =>
+      [11, 14].includes(onlyDigits(value).length);
+
+    if (!isValidDocument(customer.customer_cpf_cnpj)) {
+      showErrorToast("CPF deve ter 11 dígitos e CNPJ 14 dígitos.");
+      return;
+    }
+    if (
+      customer.alternative_cpf_cnpj &&
+      !isValidDocument(customer.alternative_cpf_cnpj)
+    ) {
+      showErrorToast("CPF/CNPJ do recibo deve ter 11 ou 14 dígitos.");
+      return;
+    }
+    if (
+      customer.customer_phone &&
+      onlyDigits(customer.customer_phone).length < 10
+    ) {
+      showErrorToast("Telefone incompleto. Informe DDD e número.");
       return;
     }
 
@@ -181,7 +222,9 @@ const CreateCustomerForm = ({
 
         setStartDate(null);
       } else {
-        showErrorToast(data.message || "Erro ao processar a solicitação!");
+        showErrorToast(
+          data.error || data.message || "Erro ao processar a solicitação!"
+        );
       }
     } catch (error) {
       showErrorToast("Erro ao processar a solicitação!");
@@ -248,7 +291,8 @@ const CreateCustomerForm = ({
                 <input
                   type="text"
                   name="customer_phone"
-                  value={customer.customer_phone || ""}
+                  value={formatPhone(customer.customer_phone)}
+                  inputMode="tel"
                   onChange={handleChange}
                   placeholder="(00) 0 0000-0000"
                   className="h-[50px] w-full bg-bg1 rounded-[15px] border-2 border-cinza6 px-4 py-2 text-texto2 shadow-sm focus:border-cinza6/50 focus:outline-none focus:ring disabled:opacity-60"
@@ -262,9 +306,10 @@ const CreateCustomerForm = ({
                 <input
                   type="text"
                   name="customer_cpf_cnpj"
-                  value={customer.customer_cpf_cnpj || ""}
+                  value={formatDocument(customer.customer_cpf_cnpj)}
+                  inputMode="numeric"
                   onChange={handleChange}
-                  placeholder="XX.XXX.XXX/0001-XX"
+                  placeholder="CPF ou CNPJ"
                   className="h-[50px] w-full bg-bg1 rounded-[15px] border-2 border-cinza6 px-4 py-2 text-texto2 shadow-sm focus:border-cinza6/50 focus:outline-none focus:ring disabled:opacity-60"
                 />
               </div>
@@ -314,9 +359,10 @@ const CreateCustomerForm = ({
                 <input
                   type="text"
                   name="alternative_cpf_cnpj"
-                  value={customer.alternative_cpf_cnpj || ""}
+                  value={formatDocument(customer.alternative_cpf_cnpj)}
+                  inputMode="numeric"
                   onChange={handleChange}
-                  placeholder="XX.XXX.XXX/0001-XX."
+                  placeholder="CPF ou CNPJ"
                   className="h-[50px] w-full bg-bg1 rounded-[15px] border-2 border-cinza6 px-4 py-2 text-texto2 shadow-sm focus:border-cinza6/50 focus:outline-none focus:ring disabled:opacity-60"
                 />
 
@@ -351,12 +397,13 @@ const CreateCustomerForm = ({
                   <input
                     type="text"
                     name="alternative_cpf_cnpj"
-                    value={alternative.alternative_cpf_cnpj || ""}
+                    value={formatDocument(alternative.alternative_cpf_cnpj)}
+                    inputMode="numeric"
                     onChange={(e) =>
                       handleAlternativeChange(
                         index,
                         "alternative_cpf_cnpj",
-                        e.target.value
+                        onlyDigits(e.target.value).slice(0, 14)
                       )
                     }
                     placeholder={`CPF/CNPJ Alternativo ${index + 1}`}

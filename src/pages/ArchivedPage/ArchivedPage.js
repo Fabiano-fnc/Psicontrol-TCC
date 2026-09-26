@@ -1,3 +1,4 @@
+import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -28,6 +29,8 @@ const ArchivedPage = () => {
 
   useOutsideClick(dropdownRef, () => setActiveDropdown(null));
   useOutsideClick(searchDropRef, () => setFilteredCustomers([]));
+  const closeDeleteModal = () => setIsConfirmModalOpen(false);
+  useEscapeKey(isConfirmModalOpen, closeDeleteModal);
 
   const fetchArchivedCustomers = async () => {
     setIsLoading(true);
@@ -254,7 +257,9 @@ const ArchivedPage = () => {
       </div>
 
       {isConfirmModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-destaque bg-opacity-30 p-4 backdrop-blur-[6px]">
+        <div
+          onClick={closeOnBackdrop(closeDeleteModal)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-destaque bg-opacity-30 p-4 backdrop-blur-[6px]">
           <div className="w-full max-w-[335px] rounded-lg border border-cinza6 bg-bg1 p-6 text-center shadow-default">
             <p className="mb-6 text-lg font-semibold text-texto2">
               Você tem certeza que deseja

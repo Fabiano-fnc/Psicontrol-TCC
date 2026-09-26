@@ -1,3 +1,4 @@
+import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import "../../index.css";
@@ -62,6 +63,8 @@ const DashBoard = () => {
 
   const dropdownRef = useRef();
   const [menuPosition, setMenuPosition] = useState(null);
+  const closeConfirmModal = () => setIsConfirmModalOpen(false);
+  useEscapeKey(isConfirmModalOpen, closeConfirmModal);
 
   // Os menus de ação ficam em posição fixa na tela para não serem cortados
   // pelas áreas com rolagem (tabela e lista de pacientes não encontrados).
@@ -925,7 +928,9 @@ const DashBoard = () => {
       )}
 
       {isConfirmModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-destaque bg-opacity-30 p-4 backdrop-blur-[6px]">
+        <div
+          onClick={closeOnBackdrop(closeConfirmModal)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-destaque bg-opacity-30 p-4 backdrop-blur-[6px]">
           <div className="w-full max-w-[335px] rounded-lg border border-cinza6 bg-bg1 p-6 text-center shadow-default">
             <p className="mb-4 text-base md:text-[21px] text-texto2 font-medium font-ubuntu leading-6 tracking-tight">
               Você tem certeza que deseja{" "}

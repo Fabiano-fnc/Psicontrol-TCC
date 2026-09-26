@@ -1,39 +1,14 @@
+import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect } from "react";
 import { CheckMessage, EditIcon, RefreshIcon } from "../../icons/icons";
 import { showAlteredToast } from "./components/toastUserPage";
 import { showErrorToast } from "../../utils/notification/toastify";
-
-const onlyDigits = (value) => (value || "").replace(/\D/g, "");
-
-const formatDocument = (value) => {
-  const digits = onlyDigits(value).slice(0, 14);
-  if (digits.length <= 11) {
-    return digits
-      .replace(/(\d{3})(\d)/, "$1.$2")
-      .replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
-  }
-  return digits
-    .replace(/(\d{2})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1.$2")
-    .replace(/(\d{3})(\d)/, "$1/$2")
-    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
-};
-
-// CRP: região (2 dígitos) / inscrição (4 a 6 dígitos), ex.: 06/123456
-const formatCrp = (value) => {
-  const digits = onlyDigits(value).slice(0, 8);
-  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
-};
-
-const formatPhone = (value) => {
-  const digits = onlyDigits(value).slice(0, 11);
-  if (digits.length <= 2) return digits;
-  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
-  if (digits.length <= 10)
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 3)} ${digits.slice(3, 7)}-${digits.slice(7)}`;
-};
+import {
+  onlyDigits,
+  formatDocument,
+  formatCrp,
+  formatPhone,
+} from "../../utils/format/format";
 
 const UserPage = () => {
   const [userData, setUserData] = useState({
@@ -324,6 +299,10 @@ const UserPage = () => {
     closeConfirmationModal();
   };
 
+  useEscapeKey(isModalOpen, closeModal);
+  useEscapeKey(isConfirmationModalOpen, closeConfirmationModal);
+  useEscapeKey(isEditing, closeEdit);
+
   const infoLineClass = "mt-2 text-base md:text-[17px] font-normal tracking-tight text-texto1";
   const infoValueClass = "break-words text-texto2";
   const labelClass =
@@ -334,7 +313,9 @@ const UserPage = () => {
     "min-w-0 rounded-[25px] border-2 border-cinza6 bg-bg1 p-5 shadow md:p-6";
 
   const ConfirmModal = ({ children, onCancel, onConfirm }) => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
+    <div
+      onClick={closeOnBackdrop(onCancel)}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
       <div className="w-full max-w-[335px] rounded-lg border-2 border-cinza6 bg-white p-6 shadow-lg">
         <p className="mb-8 text-center text-lg md:text-[21px] font-medium font-['Ubuntu'] tracking-tight text-texto2">
           {children}

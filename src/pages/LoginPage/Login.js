@@ -5,6 +5,9 @@ import BoxBlue from "./images/BoxBlue.png";
 import BoxBlueCourt from "./images/BoxBlueCourt.png";
 
 const Login = () => {
+  const sessionExpired =
+    new URLSearchParams(window.location.search).get("sessao") === "expirada";
+
   const handleLogin = async () => {
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/google`);
@@ -55,6 +58,11 @@ const Login = () => {
       {/* Cartão de login */}
       <div className="relative z-10 mx-auto -mt-16 w-[calc(100%-3rem)] max-w-[392px] md:absolute md:left-1/2 md:top-1/2 md:mt-0 md:w-[392px] md:-translate-x-1/2 md:-translate-y-1/2">
         <div className="flex flex-col items-center rounded-[20px] bg-white px-6 py-10 text-center drop-shadow-loginShadow">
+          {sessionExpired && (
+            <p className="mb-4 rounded-md bg-clara4 px-3 py-2 text-sm text-texto2">
+              Sua sessão expirou. Entre novamente para continuar.
+            </p>
+          )}
           <p className="text-[16px] font-semibold tracking-wide text-gray-700 md:text-[20px]">
             Entrar com sua conta Google
           </p>

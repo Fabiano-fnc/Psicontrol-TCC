@@ -1,3 +1,4 @@
+import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect, useRef } from "react";
 import { Trash, AddIcon } from "../../icons/icons";
 import { Months } from "../../utils/Months/months";
@@ -409,6 +410,8 @@ const IncomePage = () => {
     });
   };
 
+  useEscapeKey(isModalOpen, closeModal);
+
   const itemRowClass = "mt-2 flex items-center gap-3";
   const valueBoxClass =
     "flex w-[120px] shrink-0 items-center justify-center rounded-[15px] border-[2px] border-cinza6 bg-neutral-100 p-2 text-sm text-gray-700 md:w-[140px] md:text-base";
@@ -422,7 +425,9 @@ const IncomePage = () => {
   return (
     <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
+        <div
+          onClick={closeOnBackdrop(closeModal)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
           <div className="w-full max-w-[335px] rounded-lg border-2 border-cinza6 bg-white p-6 shadow-lg">
             <p className="mb-6 text-center text-lg md:text-[21px] font-medium font-['Ubuntu'] tracking-tight text-texto2">
               Você tem certeza que deseja

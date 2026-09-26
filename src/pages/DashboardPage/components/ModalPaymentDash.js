@@ -1,9 +1,11 @@
+import { closeOnBackdrop, useEscapeKey } from "../../../utils/Modal/useDismiss";
 import React from "react";
 import { useState } from "react";
 import { CloseIconPaymentModal } from "./IconsDashBoard";
 
 const ModalPaymentDash = ({ onClose, onSave, totalAmount }) => {
   const [paymentAmount, setPaymentAmount] = useState("");
+  useEscapeKey(true, onClose);
 
   const formatCurrency = (value) => {
     if (typeof value !== "string") {
@@ -40,7 +42,9 @@ const ModalPaymentDash = ({ onClose, onSave, totalAmount }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM bg-opacity-30 p-4 backdrop-blur-sm">
+    <div
+      onClick={closeOnBackdrop(onClose)}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-bgM bg-opacity-30 p-4 backdrop-blur-sm">
       <div className="w-full max-w-[445px] rounded-lg border border-cinza6 bg-white p-6 shadow-lg">
         <div className="mb-6 flex items-start justify-between gap-4">
           <h2 className="flex-1 text-center text-base md:text-F21 font-medium font-ubuntu tracking-tight text-primaria">

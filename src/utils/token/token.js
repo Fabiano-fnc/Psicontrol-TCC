@@ -10,9 +10,15 @@ const Token = (props) => {
   const search = useLocation().search;
   const token = new URLSearchParams(search).get("token");
   useEffect(() => {
+    if (!token) {
+      navigate("/", { replace: true });
+      return;
+    }
     localStorage.setItem("authentication_token", token);
-    navigate("/select-calendar");
-  }, [token]);
+    navigate("/select-calendar", { replace: true });
+  }, [token, navigate]);
+
+  return null;
 };
 
 export default Token;

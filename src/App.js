@@ -13,6 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ArchivedPage from "./pages/ArchivedPage/ArchivedPage";
 import UserPage from "./pages/UserPage/UserPage";
 import ProfileCustomerPage from "./pages/ProfileCustomerPage/ProfileCustomerPage";
+import RequireAuth from "./utils/auth/RequireAuth";
 
 const App = () => {
   return (
@@ -20,16 +21,21 @@ const App = () => {
       <ToastContainer/>
       <Routes>
         <Route path="/" element={<Login />} />
-          <Route path="/token" element={<Token />} />
+        <Route path="/token" element={<Token />} />
+        <Route element={<RequireAuth />}>
           <Route path="/select-calendar" element={<SelectCalendarPage />} />
           <Route element={<Layout />}>
-          <Route path="/create-event-form" element={<Dashboard />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/create-customer" element={<CreateCustomerPage />} />
-          <Route path="/income" element={<IncomePage />} />
-          <Route path="/archived" element={<ArchivedPage/>} />
-          <Route path="/user" element={<UserPage/>} />
-          <Route path="/customers/:customerId/profile" element={<ProfileCustomerPage/>} />
+            <Route path="/create-event-form" element={<Dashboard />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/create-customer" element={<CreateCustomerPage />} />
+            <Route path="/income" element={<IncomePage />} />
+            <Route path="/archived" element={<ArchivedPage />} />
+            <Route path="/user" element={<UserPage />} />
+            <Route
+              path="/customers/:customerId/profile"
+              element={<ProfileCustomerPage />}
+            />
+          </Route>
         </Route>
       </Routes>
     </Router>

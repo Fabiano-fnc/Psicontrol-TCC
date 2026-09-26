@@ -1,3 +1,4 @@
+import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import DropDownProfile from "./components/DropdownProfilePage";
@@ -12,6 +13,7 @@ import {
 import { HamburguerIcon } from "../../icons/icons";
 import { showErrorToast } from "../../utils/notification/toastify";
 import { useOutsideClick } from "../../utils/OutsideClick/useOutsideClick";
+import { formatDocument, formatPhone } from "../../utils/format/format";
 import {
   showDeleteProfileToast,
   showArchiveProfileToast,
@@ -32,6 +34,9 @@ const ProfileCustomerPage = () => {
 
   const dropdownRef = useRef();
   useOutsideClick(dropdownRef, () => setActiveDropdown(null));
+  const closeDeleteModal = () => setIsConfirmModalOpen(false);
+  useEscapeKey(isEditing, () => handleCancelEdit());
+  useEscapeKey(isConfirmModalOpen, closeDeleteModal);
 
   const toggleDropdown = (customer_id) => {
     setActiveDropdown((prev) => (prev === customer_id ? null : customer_id));
@@ -169,7 +174,7 @@ const ProfileCustomerPage = () => {
               <p className={lineClass}>
                 <strong>CPF/CNPJ:</strong>{" "}
                 <span className={valueClass}>
-                  {orNotInformed(customer.customer_cpf_cnpj)}
+                  {orNotInformed(formatDocument(customer.customer_cpf_cnpj))}
                 </span>
               </p>
               <p className={lineClass}>
@@ -187,7 +192,7 @@ const ProfileCustomerPage = () => {
               <p className={lineClass}>
                 <strong>Telefone:</strong>{" "}
                 <span className={valueClass}>
-                  {orNotInformed(customer.customer_phone)}
+                  {orNotInformed(formatPhone(customer.customer_phone))}
                 </span>
               </p>
             </div>
@@ -204,7 +209,7 @@ const ProfileCustomerPage = () => {
             <p className={lineClass}>
               <strong>CPF/CNPJ:</strong>{" "}
               <span className={valueClass}>
-                {orNotInformed(customer.alternative_cpf_cnpj)}
+                {orNotInformed(formatDocument(customer.alternative_cpf_cnpj))}
               </span>
             </p>
             <p className={lineClass}>
@@ -253,7 +258,9 @@ const ProfileCustomerPage = () => {
       )}
 
       {isConfirmModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-destaque bg-opacity-30 p-4 backdrop-blur-[6px]">
+        <div
+          onClick={closeOnBackdrop(closeDeleteModal)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-destaque bg-opacity-30 p-4 backdrop-blur-[6px]">
           <div className="w-full max-w-[335px] rounded-lg border border-cinza6 bg-bg1 p-6 text-center shadow-default">
             <p className="mb-6 text-lg font-semibold text-texto2">
               Você tem certeza que deseja
