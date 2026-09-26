@@ -45,7 +45,30 @@ const TopBar = ({ onMenuClick }) => {
           ), 
           margin: "" 
         };
+      case "/archived":
+        return {
+          title: (
+            <>
+              <span className="hidden md:inline">Pacientes Arquivados</span>
+              <span className="block md:hidden">Pacientes<br />Arquivados</span>
+            </>
+          ),
+          margin: "",
+        };
+      case "/create-customer":
+        return { title: "Novo Paciente", margin: "" };
       default:
+        if (location.pathname.startsWith("/customers/")) {
+          return {
+            title: (
+              <>
+                <span className="hidden md:inline">Perfil do Paciente</span>
+                <span className="block md:hidden">Perfil do<br />Paciente</span>
+              </>
+            ),
+            margin: "",
+          };
+        }
         return { 
           title: (
             <>

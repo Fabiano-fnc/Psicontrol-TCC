@@ -1,34 +1,20 @@
 import { Trash, UnarchiveIcon } from "../../../icons/icons";
 
-const DropDown = ({
-  dropdownRef,
-  customerId,
-  onDelete,
-  setSelectedPatient,
-  openModal,
-  customers,
-  onUnarchive,
-}) => {
+const itemClass =
+  "group flex w-full items-center gap-2 px-6 py-2.5 text-left font-['Open Sans'] text-[15px] font-normal leading-5 tracking-normal text-texto2 underline hover:bg-clara3 hover:text-texto2/70";
+
+const DropDown = ({ customerId, onDelete, onUnarchive }) => {
   return (
-    <nav
-      className="absolute right-0 box-border border-[1px] border-1 border-cinza6 bg-bg2 shadow-dropShadow rounded-l-[5px]"
-      ref={dropdownRef}
-    >
-      <ul className="w-[210px] h-[130px] p-1 ">
+    <nav className="absolute right-0 top-full z-20 mt-1 w-[220px] rounded-md border border-cinza6 bg-bg2 py-2 shadow-dropShadow">
+      <ul>
         <li>
-          <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] flex bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
-            onClick={() => onUnarchive(customerId)}
-          >
+          <button className={itemClass} onClick={() => onUnarchive(customerId)}>
             <UnarchiveIcon />
             Desarquivar
           </button>
         </li>
         <li>
-          <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] flex bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
-            onClick={() => onDelete(customerId)}
-          >
+          <button className={itemClass} onClick={() => onDelete(customerId)}>
             <Trash />
             Excluir do arquivo
           </button>

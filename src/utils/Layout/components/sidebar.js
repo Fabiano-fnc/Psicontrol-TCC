@@ -18,7 +18,12 @@ const menuItems = [
     matchPrefix: true,
   },
   { path: "/income", label: ["Receitas e", "Despesas"], Icon: RecDespIcon },
-  { path: "/customers", label: ["Pacientes"], Icon: UserIcon },
+  {
+    path: "/customers",
+    label: ["Pacientes"],
+    Icon: UserIcon,
+    activePaths: ["/customers", "/archived", "/create-customer"],
+  },
   { path: "/user", label: ["Minhas", "Configurações"], Icon: ConfigIcon },
 ];
 
@@ -47,7 +52,9 @@ const Sidebar = ({ isOpen, onToggle, onNavigate }) => {
   const isActive = (item) =>
     item.matchPrefix
       ? location.pathname.startsWith(item.path)
-      : location.pathname === item.path;
+      : (item.activePaths || [item.path]).some((path) =>
+          location.pathname.startsWith(path)
+        );
 
   return (
     <aside

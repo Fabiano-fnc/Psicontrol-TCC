@@ -1,9 +1,9 @@
 import { EditIcon, Trash, ArchiveIcon } from "../../../icons/icons";
-import { Link } from "react-router-dom";
 
+const itemClass =
+  "group flex w-full items-center gap-2 px-6 py-2.5 text-left font-['Open Sans'] text-[15px] font-normal leading-5 tracking-normal text-texto2 underline hover:bg-clara3 hover:text-texto2/70";
 
 const DropDownProfile = ({
-  dropdownRef,
   customerId,
   onDelete,
   setSelectedPatient,
@@ -12,23 +12,17 @@ const DropDownProfile = ({
   onArchive,
 }) => {
   return (
-    <nav
-      className="absolute right-0 mt-4 box-border border-[1px] border-1 border-cinza6 bg-bg2 shadow-dropShadow rounded-l-[5px]"
-      ref={dropdownRef}
-    >
-      <ul className="w-[210px] h-[189px] p-4">
+    <nav className="absolute right-0 top-full z-20 mt-1 w-[220px] rounded-md border border-cinza6 bg-bg2 py-2 shadow-dropShadow">
+      <ul>
         <li>
-          <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] flex bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
-            onClick={() => onArchive(customerId)}
-          >
+          <button className={itemClass} onClick={() => onArchive(customerId)}>
             <ArchiveIcon />
-            <Link to="/customers" >Arquivar paciente </Link>
+            Arquivar paciente
           </button>
         </li>
         <li>
           <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] flex bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
+            className={itemClass}
             onClick={() => {
               setSelectedPatient(customer);
               openModal();
@@ -39,10 +33,7 @@ const DropDownProfile = ({
           </button>
         </li>
         <li>
-          <button
-            className="group mt-5 flex items-center gap-2 ml-6 font-['Open Sans'] flex bg-bg2 text-[15px] font-normal not-italic leading-5 tracking-normal text-texto2 underline hover:bg-bg2 hover:text-texto2/50"
-            onClick={() => onDelete(customerId)}
-          >
+          <button className={itemClass} onClick={() => onDelete(customerId)}>
             <Trash />
             Excluir paciente
           </button>

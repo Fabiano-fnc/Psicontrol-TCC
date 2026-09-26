@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import "../../index.css";
-import CreateCustomerForm from "./components/CreateCustomerForm";
+import CreateCustomerForm, {
+  UsePatientDataButton,
+} from "./components/CreateCustomerForm";
 import {
   SearchIcon,
   AddIcon,
@@ -375,15 +377,5 @@ const CustomersPage = () => {
     </div>
   );
 };
-
-const UsePatientDataButton = ({ onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="h-[52px] w-[181px] rounded-[10px] border-2 border-primaria bg-bg1 text-center text-sm font-medium font-['Ubuntu'] tracking-tight text-primaria hover:bg-clara4"
-  >
-    Usar dados do <br /> paciente
-  </button>
-);
 
 export default CustomersPage;
