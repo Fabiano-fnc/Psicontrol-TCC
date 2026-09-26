@@ -20,6 +20,12 @@ const formatDocument = (value) => {
     .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 };
 
+// CRP: região (2 dígitos) / inscrição (4 a 6 dígitos), ex.: 06/123456
+const formatCrp = (value) => {
+  const digits = onlyDigits(value).slice(0, 8);
+  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
+};
+
 const formatPhone = (value) => {
   const digits = onlyDigits(value).slice(0, 11);
   if (digits.length <= 2) return digits;
@@ -157,6 +163,7 @@ const UserPage = () => {
       ...userData,
       user_document: formatDocument(userData.user_cpf || userData.user_cnpj),
       user_phone: formatPhone(userData.user_phone),
+      crp_number: formatCrp(userData.crp_number),
     });
     setFileName("nomedoarquivo.png");
   };
@@ -176,13 +183,19 @@ const UserPage = () => {
       return;
     }
 
+    const crpDigits = onlyDigits(draft.crp_number);
+    if (crpDigits.length > 0 && crpDigits.length < 6) {
+      showErrorToast("CRP incompleto. Use o formato XX/XXXXX.");
+      return;
+    }
+
     const isCnpj = documentDigits.length === 14;
 
     try {
       const formData = new FormData();
       formData.append("user_cpf", isCnpj ? "" : documentDigits);
       formData.append("user_cnpj", isCnpj ? documentDigits : "");
-      formData.append("crp_number", (draft.crp_number || "").trim());
+      formData.append("crp_number", formatCrp(draft.crp_number));
       formData.append("user_phone", phoneDigits);
       formData.append("user_message", draft.user_message || "");
       formData.append("clinic_name", (draft.clinic_name || "").trim());
@@ -277,6 +290,8 @@ const UserPage = () => {
         ? formatDocument(value)
         : name === "user_phone"
         ? formatPhone(value)
+        : name === "crp_number"
+        ? formatCrp(value)
         : value;
 
     setDraft((prevDraft) => ({
@@ -389,7 +404,9 @@ const UserPage = () => {
                 </div>
                 <div className={infoLineClass}>
                   <span>CRP: </span>
-                  <span className={infoValueClass}>{userData.crp_number}</span>
+                  <span className={infoValueClass}>
+                    {formatCrp(userData.crp_number)}
+                  </span>
                 </div>
                 <div className={infoLineClass}>
                   <span>E-mail: </span>
@@ -423,7 +440,9 @@ const UserPage = () => {
               </div>
               <div className={infoLineClass}>
                 <span>CRP: </span>
-                <span className={infoValueClass}>{userData.crp_number}</span>
+                <span className={infoValueClass}>
+                    {formatCrp(userData.crp_number)}
+                  </span>
               </div>
               <div className={infoLineClass}>
                 <span>Logo: </span>
@@ -652,7 +671,7 @@ const UserPage = () => {
                   <input
                     type="text"
                     name="crp_number"
-                    maxLength={15}
+                    inputMode="numeric"
                     value={draft.crp_number || ""}
                     onChange={handleChange}
                     placeholder="XX/XXXXX"
