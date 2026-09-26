@@ -191,8 +191,13 @@ const CreateCustomerForm = ({
     };
 
     try {
+      const payload = { ...customer };
+      Object.keys(DIGIT_FIELDS).forEach((field) => {
+        if (payload[field]) payload[field] = onlyDigits(payload[field]);
+      });
+
       const response = await createOrUpdateCustomer(
-        customer,
+        payload,
         additionalAlternatives,
         customer.customer_id
       );
