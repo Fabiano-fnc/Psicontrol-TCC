@@ -97,7 +97,7 @@ const SelectCalendarPage = () => {
       ) : (
         <div className="mt-8 flex flex-col items-center justify-center gap-8">
           <div className="flex w-auto p-[5px] rounded-[8px] border-2 border-solid border-primaria flex-col items-center justify-center">
-            <h1 className="mb-8 text-[25px] leading-[29px] text-texto1 font-['Ubuntu'] font-normal">
+            <h1 className="mb-8 text-[25px] leading-[29px] text-texto1 font-ubuntu font-normal">
               Escolher agenda
             </h1>
             <h2 className="mb-[16px] border-b border-b-cinza6 text-center text-[19.2px] text-texto1 font-bold flex items-center justify-center">

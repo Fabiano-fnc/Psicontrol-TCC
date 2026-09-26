@@ -8,8 +8,7 @@ import CustomersPage from "./pages/CustomerPage/CustomersPage";
 import CreateCustomerPage from "./pages/CustomerPage/components/CreateCustomerForm";
 import IncomePage from "./pages/IncomePage/IncomePage";
 import Layout from "./utils/Layout/layout";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import Toaster from "./utils/notification/Toaster";
 import ArchivedPage from "./pages/ArchivedPage/ArchivedPage";
 import UserPage from "./pages/UserPage/UserPage";
 import ProfileCustomerPage from "./pages/ProfileCustomerPage/ProfileCustomerPage";
@@ -18,7 +17,7 @@ import RequireAuth from "./utils/auth/RequireAuth";
 const App = () => {
   return (
     <Router>
-      <ToastContainer/>
+      <Toaster />
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/token" element={<Token />} />

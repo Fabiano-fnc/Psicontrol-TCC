@@ -1,3 +1,4 @@
+import { notify } from "../../../utils/notification/notify";
 import { closeOnBackdrop, useEscapeKey } from "../../../utils/Modal/useDismiss";
 import React from "react";
 import { useState } from "react";
@@ -35,7 +36,7 @@ const ModalPaymentDash = ({ onClose, onSave, totalAmount }) => {
 
   const handleSave = () => {
     if (!paymentAmount || parseFloat(paymentAmount) <= 0) {
-      alert("Informe um valor válido.");
+      notify.error("Informe um valor válido.");
       return;
     }
     onSave(parseCurrency(paymentAmount));
@@ -62,7 +63,7 @@ const ModalPaymentDash = ({ onClose, onSave, totalAmount }) => {
             </label>
             <input
               type="text"
-              className="mt-1 h-[42px] w-full rounded-B15 border-2 border-cinza6 px-3 py-2 text-center text-base md:text-lg text-texto2"
+              className="mt-1 h-[42px] w-full rounded-xl border border-cinza6 px-3 py-2 text-center text-base md:text-lg text-texto2"
               value={`R$ ${totalAmount.toLocaleString("pt-BR", {
                 minimumFractionDigits: 2,
               })}`}
@@ -76,7 +77,7 @@ const ModalPaymentDash = ({ onClose, onSave, totalAmount }) => {
             <input
               type="text"
               placeholder="R$ 00,00"
-              className="mt-1 h-[42px] w-full rounded-B15 border-2 border-cinza6 px-3 py-2 text-center text-base md:text-lg text-texto2"
+              className="mt-1 h-[42px] w-full rounded-xl border border-cinza6 px-3 py-2 text-center text-base md:text-lg text-texto2"
               inputMode="numeric"
               value={paymentAmount}
               onChange={handleInputChange}

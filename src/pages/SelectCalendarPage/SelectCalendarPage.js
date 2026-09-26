@@ -116,7 +116,7 @@ const SelectCalendarPage = () => {
         </div>
       ) : (
         <div className="flex w-full max-w-[380px] flex-col items-center rounded-[8px] border-2 border-solid border-primaria bg-bg1 px-5 py-6 shadow-xl md:px-8">
-          <h1 className="mb-6 font-['Ubuntu'] text-[18px] font-normal leading-[26px] text-texto1 md:text-[22px]">
+          <h1 className="mb-6 font-ubuntu text-[18px] font-normal leading-[26px] text-texto1 md:text-[22px]">
             Escolher agenda
           </h1>
           <h2 className="mb-4 flex items-center justify-center gap-2 border-b border-b-cinza6 pb-1 text-center text-[16px] font-bold text-texto1">

@@ -1,3 +1,5 @@
+import { notify } from "../../utils/notification/notify";
+import { formatBRL } from "../../utils/format/format";
 import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -12,13 +14,27 @@ import {
   showDeleteToast,
   showConfirmPaymentToast,
 } from "./components/ToastDashBoard";
-import { CrossIcon, VerifyGreenIcon } from "./components/IconsDashBoard";
+
 import CardDashBoard from "./components/CardsDashBoard";
 import DropDownDashActions from "./components/DropDownDashActions";
 import BillingDashBoard from "./components/BillingDashBoard";
 import ModalPaymentDash from "./components/ModalPaymentDash";
 import FilterStatusDashBoard from "./components/FilterStatusDashBoard";
 import { Months } from "../../utils/Months/months";
+
+const badgeStyles = {
+  ok: "bg-green-50 text-green-700 ring-green-600/20",
+  warn: "bg-amber-50 text-amber-700 ring-amber-600/20",
+  pending: "bg-slate-100 text-texto3 ring-slate-500/20",
+};
+
+const StatusBadge = ({ tone, children }) => (
+  <span
+    className={`inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${badgeStyles[tone]}`}
+  >
+    {children}
+  </span>
+);
 
 const DashBoard = () => {
   const [customersData, setCustomersData] = useState([]);
@@ -243,7 +259,7 @@ const DashBoard = () => {
     if (patient && patient.customer_id) {
       setSelectedPatient(patient);
     } else {
-      alert("Paciente não possui ID.");
+      notify.error("Paciente não possui ID.");
     }
 
     setIsDropdownOpenPatients((prevIndex) =>
@@ -389,7 +405,7 @@ const DashBoard = () => {
     const customerId = customer?.customer_id;
 
     if (!customerId) {
-      alert("ID do cliente não encontrado.");
+      notify.error("ID do cliente não encontrado.");
       return;
     }
 
@@ -445,12 +461,11 @@ const DashBoard = () => {
       if (openModalOnly) {
         setIsBillingModalOpen(true);
       } else {
-        alert("Redirecionando para o WhatsApp...");
         window.open(whatsappLink, "_blank");
       }
     } else {
       const errorData = await response.json();
-      alert(`Erro: ${errorData.error}`);
+      notify.error(errorData.error || "Não foi possível concluir a ação.");
     }
   };
 
@@ -458,7 +473,7 @@ const DashBoard = () => {
     const customerId = customer?.customer_id;
 
     if (!customerId) {
-      alert("ID do cliente não encontrado.");
+      notify.error("ID do cliente não encontrado.");
       return;
     }
 
@@ -493,11 +508,10 @@ const DashBoard = () => {
             : patient
         )
       );
-      alert("Abrindo cliente de email...");
       window.open(mailtoLink, "_blank");
     } else {
       const errorData = await response.json();
-      alert(`Erro: ${errorData.error}`);
+      notify.error(errorData.error || "Não foi possível concluir a ação.");
     }
   };
 
@@ -517,7 +531,7 @@ const DashBoard = () => {
       fetchUnmatchedPatients();
     } else {
       const errorData = await response.json();
-      alert(`Erro: ${errorData.error}`);
+      notify.error(errorData.error || "Não foi possível concluir a ação.");
     }
   };
 
@@ -570,7 +584,7 @@ const DashBoard = () => {
 
       setIsPartialPaymentModalOpen(false);
     } else {
-      alert("Erro ao salvar pagamento parcial.");
+      notify.error("Erro ao salvar pagamento parcial.");
     }
   };
 
@@ -581,7 +595,7 @@ const DashBoard = () => {
 
   const handleConfirmPayment = async (patient) => {
     if (!patient || !patient.customer_id) {
-      alert("Paciente não encontrado.");
+      notify.error("Paciente não encontrado.");
       return;
     }
 
@@ -615,17 +629,17 @@ const DashBoard = () => {
         )
       );
     } else {
-      alert("Erro ao confirmar pagamento.");
+      notify.error("Erro ao confirmar pagamento.");
     }
   };
 
   const thClass =
-    "whitespace-nowrap border-b border-b-cinza6 px-3 md:px-4 py-2 text-center align-middle text-sm md:text-lg font-medium tracking-tight text-primaria";
+    "whitespace-nowrap border-b border-b-cinza9 bg-clara4 px-3 md:px-4 py-3 text-center align-middle text-xs font-semibold uppercase tracking-wide text-texto3";
   const tdClass =
-    "whitespace-nowrap px-3 md:px-4 py-2 text-center align-middle text-sm md:text-F15 text-texto1 font-normal font-['Open Sans'] tracking-tight";
+    "whitespace-nowrap px-3 md:px-4 py-2 text-center align-middle text-sm md:text-F15 text-texto1 font-normal font-openSans tracking-tight";
 
   return (
-    <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
+    <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
       {loading ? (
         <p>Carregando...</p>
       ) : error ? (
@@ -633,33 +647,33 @@ const DashBoard = () => {
       ) : (
         <>
           {/* Mês + indicadores */}
-          <div className="grid grid-cols-2 gap-x-3 gap-y-7 pt-2 lg:flex lg:items-center lg:gap-3 lg:pt-4">
+          <div className="grid grid-cols-2 gap-3 lg:flex lg:items-stretch lg:gap-4">
             <Months
               onMonthChange={handleMonthChange}
               onYearChange={handleYearChange}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
-              wrapperClassName="col-span-2 z-20 lg:flex-1"
+              wrapperClassName="col-span-2 z-20 lg:flex-1 lg:self-center"
             />
             <CardDashBoard
               title="Nº de Consultas"
               value={totalConsultations}
-              isCurrency={false}
+              
             />
             <CardDashBoard
               title="Receita Total"
-              value={totalRevenue.toFixed(2).replace(".", ",")}
-              isCurrency={true}
+              value={formatBRL(totalRevenue)}
+              
             />
             <CardDashBoard
               title="Receita líquida"
-              value={netRevenue.toFixed(2).replace(".", ",")}
-              isCurrency={true}
+              value={formatBRL(netRevenue)}
+              
             />
             <CardDashBoard
               title="Hora líquida"
-              value={netTime.toFixed(2).replace(".", ",")}
-              isCurrency={true}
+              value={formatBRL(netTime)}
+              
             />
           </div>
 
@@ -671,11 +685,11 @@ const DashBoard = () => {
           </div>
 
           {/* Faturamento do mês */}
-          <div className="relative z-0 w-full overflow-x-auto rounded-B10 md:rounded-B15 border md:border-[3px] border-solid border-cinza6 bg-bg1">
+          <div className="relative z-0 w-full overflow-x-auto rounded-lg md:rounded-xl border border-solid border-cinza6 bg-bg1 shadow-card">
             <table className="w-full min-w-[860px] bg-bg1 text-left">
               <thead>
                 <tr>
-                  <th className={`${thClass} sticky left-0 z-10 bg-bg1 text-left`}>
+                  <th className={`${thClass} sticky left-0 z-10 text-left`}>
                     Paciente
                   </th>
                   <th className={thClass}>Valor Consulta</th>
@@ -695,7 +709,7 @@ const DashBoard = () => {
                       key={index}
                       className="border-b border-b-cinza9 last:border-b-0 hover:bg-clara4"
                     >
-                      <td className="sticky left-0 z-10 bg-bg1 px-3 md:px-4 py-2 text-sm md:text-F15 text-texto1 font-['Open Sans'] tracking-tight">
+                      <td className="sticky left-0 z-10 bg-bg1 px-3 md:px-4 py-2 text-sm md:text-F15 text-texto1 font-openSans tracking-tight">
                         <div className="flex flex-col justify-center leading-tight">
                           <span>
                             {patient.Customer?.customer_name?.split(" ")[0] ||
@@ -710,10 +724,7 @@ const DashBoard = () => {
                         </div>
                       </td>
                       <td className={tdClass}>
-                        R${" "}
-                        {parseFloat(patient.consultation_fee)
-                          .toFixed(2)
-                          .replace(".", ",")}
+                        {formatBRL(patient.consultation_fee)}
                       </td>
                       <td className={`${tdClass} whitespace-normal min-w-[120px]`}>
                         {patient.consultation_days
@@ -728,39 +739,36 @@ const DashBoard = () => {
                         {patient.num_consultations || "-"}
                       </td>
                       <td className={tdClass}>
-                        R$ {patient.total_consultation_fee || "0,00"}
+                        {formatBRL(patient.total_consultation_fee)}
                       </td>
                       <td className={tdClass}>
                         <div className="flex items-center justify-center">
                           {patient.sending_invoice ? (
-                            <VerifyGreenIcon />
+                            <StatusBadge tone="ok">Enviada</StatusBadge>
                           ) : (
-                            <CrossIcon />
+                            <StatusBadge tone="pending">Pendente</StatusBadge>
                           )}
                         </div>
                       </td>
                       <td className={tdClass}>
                         <div className="flex items-center justify-center">
                           {patient.payment_status === "pago" ? (
-                            <VerifyGreenIcon />
+                            <StatusBadge tone="ok">Pago</StatusBadge>
                           ) : patient.payment_status === "parcial" ? (
-                            <span className="rounded-B15 border-2 border-aviso px-2 text-sm md:text-F15 font-semibold text-texto2">
-                              R${" "}
-                              {parseFloat(patient.payment_amount || 0)
-                                .toFixed(2)
-                                .replace(".", ",")}
-                            </span>
+                            <StatusBadge tone="warn">
+                              Parcial · {formatBRL(patient.payment_amount)}
+                            </StatusBadge>
                           ) : (
-                            <CrossIcon />
+                            <StatusBadge tone="pending">Em aberto</StatusBadge>
                           )}
                         </div>
                       </td>
                       <td className={tdClass}>
                         <div className="flex items-center justify-center">
                           {patient.invoice_issued ? (
-                            <VerifyGreenIcon />
+                            <StatusBadge tone="ok">Emitida</StatusBadge>
                           ) : (
-                            <CrossIcon />
+                            <StatusBadge tone="pending">Pendente</StatusBadge>
                           )}
                         </div>
                       </td>
@@ -820,14 +828,14 @@ const DashBoard = () => {
             )}
 
           {/* Pacientes não encontrados */}
-          <div className="relative z-0 mt-8 rounded-B10 md:rounded-B15 border md:border-[3px] border-solid border-cinza6 bg-bg1">
-            <h2 className="px-4 pt-5 text-lg md:text-F25 font-normal font-ubuntu text-primaria">
+          <div className="relative z-0 mt-8 rounded-lg md:rounded-xl border border-solid border-cinza6 bg-bg1 shadow-card">
+            <h2 className="px-4 pt-5 font-ubuntu text-lg font-semibold text-texto1 md:px-6 md:text-xl">
               Pacientes não encontrados
             </h2>
 
             {isSearchBarOpen && (
               <div
-                className="absolute inset-0 z-20 rounded-B10 md:rounded-B15 bg-bg1/30 p-4 backdrop-blur-sm"
+                className="absolute inset-0 z-20 rounded-lg md:rounded-xl bg-bg1/30 p-4 backdrop-blur-sm"
                 onClick={(e) => {
                   if (e.target === e.currentTarget) setIsSearchBarOpen(false);
                 }}
@@ -864,8 +872,8 @@ const DashBoard = () => {
                     ))
                   ) : (
                     <tr>
-                      <td className="px-4 py-4 text-center text-sm md:text-base text-texto2">
-                        Nenhum paciente não encontrado
+                      <td className="px-4 py-6 text-center text-sm text-texto3">
+                        Todos os eventos da agenda estão vinculados a pacientes.
                       </td>
                     </tr>
                   )}
@@ -905,14 +913,14 @@ const DashBoard = () => {
             if (selectedPatient && selectedPatient.customer_id) {
               handleSendWhatsApp(selectedPatient);
             } else {
-              alert("Paciente não encontrado ou sem ID.");
+              notify.error("Paciente não encontrado ou sem ID.");
             }
           }}
           onSendEmail={() => {
             if (selectedPatient && selectedPatient.customer_id) {
               handleSendEmail(selectedPatient);
             } else {
-              alert("Paciente não encontrado ou sem ID.");
+              notify.error("Paciente não encontrado ou sem ID.");
             }
           }}
           message={billingMessage}

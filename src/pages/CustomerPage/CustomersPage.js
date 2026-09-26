@@ -169,16 +169,16 @@ const CustomersPage = () => {
   };
 
   return (
-    <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
+    <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM bg-opacity-30 p-4 backdrop-blur-[6px]">
-          <div className="max-h-[92vh] w-full max-w-[1076px] overflow-y-auto rounded-[25px] border-2 border-cinza6 bg-bg1 p-5 shadow-lg md:p-8">
+          <div className="max-h-[92vh] w-full max-w-[1076px] overflow-y-auto rounded-2xl border border-cinza6 bg-bg1 p-5 shadow-lg md:p-8">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:px-6">
-              <h2 className="text-[20px] md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+              <h2 className="text-[20px] md:text-[25px] font-medium font-ubuntu text-primaria">
                 {isEditing ? "Editar Paciente" : "Adicionar Paciente"}
               </h2>
               <div className="hidden items-center justify-between gap-4 md:flex">
-                <h3 className="text-[20px] md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+                <h3 className="text-[20px] md:text-[25px] font-medium font-ubuntu text-primaria">
                   Dados para recibo
                 </h3>
                 <UsePatientDataButton onClick={handleUsePatientData} />
@@ -193,7 +193,7 @@ const CustomersPage = () => {
               isEditing={isEditing}
               receiptHeader={
                 <div className="flex flex-wrap items-center justify-between gap-3 md:hidden">
-                  <h3 className="text-[20px] font-medium font-['Ubuntu'] text-primaria">
+                  <h3 className="text-[20px] font-medium font-ubuntu text-primaria">
                     Dados para recibo
                   </h3>
                   <UsePatientDataButton onClick={handleUsePatientData} />
@@ -204,7 +204,7 @@ const CustomersPage = () => {
         </div>
       )}
 
-      <div className="rounded-[15px] border-[3px] border-solid border-cinza6 bg-bg1">
+      <div className="rounded-xl border border-solid border-cinza6 bg-bg1 shadow-card">
         <div className="flex flex-col gap-4 px-4 pt-6 md:flex-row md:items-center md:gap-8 md:px-7">
           <div className="relative w-full md:w-[360px]">
             <input
@@ -212,7 +212,7 @@ const CustomersPage = () => {
               placeholder={searchTerm ? "" : "Pesquisar pacientes"}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`h-[48px] md:h-[56px] w-full rounded-[15px] ${searchTerm ? "rounded-b-none" : ""} bg-clara3 pl-11 pr-12 text-texto2 focus:outline-none focus:ring-0 caret-primaria`}
+              className={`h-[48px] md:h-[56px] w-full rounded-xl ${searchTerm ? "rounded-b-none" : ""} bg-clara3 pl-11 pr-12 text-texto2 focus:outline-none focus:ring-0 caret-primaria`}
             />
             <div className="absolute left-1 top-1/2 -translate-y-1/2 transform">
               {searchTerm.length > 0 ? (
@@ -276,7 +276,7 @@ const CustomersPage = () => {
           <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
             <button
               onClick={handleAddPatient}
-              className="flex h-[41px] w-[200px] items-center justify-center space-x-2 rounded-[10px] border-2 border-solid border-primaria bg-bg1 px-4 text-center font-['Ubuntu'] text-sm font-semibold leading-[20px] tracking-[0.15px] text-primaria shadow-md hover:bg-clara4 active:shadow-innerShadow"
+              className="flex h-[41px] w-[200px] items-center justify-center space-x-2 rounded-[10px] border-2 border-solid border-primaria bg-bg1 px-4 text-center font-ubuntu text-sm font-semibold leading-[20px] tracking-[0.15px] text-primaria shadow-md hover:bg-clara4 active:shadow-innerShadow"
             >
               <AddIcon />
               <span>Adicionar paciente</span>
@@ -292,7 +292,7 @@ const CustomersPage = () => {
           </div>
         </div>
 
-        <div className="mt-6 flex items-center justify-between border-b border-cinza6 px-4 pb-3 font-['Ubuntu'] text-lg font-medium leading-[21px] tracking-[0.09px] text-primaria md:px-8">
+        <div className="mt-6 flex items-center justify-between border-y border-cinza9 bg-clara4 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-texto3 md:px-8">
           <span>Paciente</span>
           <span>Ações</span>
         </div>
@@ -312,7 +312,7 @@ const CustomersPage = () => {
                 .map((customer) => (
                   <li
                     key={`customer-${customer.customer_id}`}
-                    className="flex items-center justify-between gap-4 border-b border-cinza6 px-4 py-3 last:border-b-0 md:px-8 md:py-4"
+                    className="flex items-center justify-between gap-4 border-b border-cinza9 px-4 py-3 last:border-b-0 md:px-8 md:py-4"
                   >
                     <span
                       className="cursor-pointer break-words text-base text-texto1 hover:text-primaria hover:underline md:text-xl"

@@ -39,7 +39,7 @@ const FilterStatusDashBoard = ({ selectedStatus, onChangeStatus }) => {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium font-['Ubuntu'] tracking-tight text-primaria underline hover:bg-clara3 active:text-primaria/50"
+        className="flex items-center gap-2 rounded-md px-2 py-1 text-sm font-medium font-ubuntu tracking-tight text-primaria underline hover:bg-clara3 active:text-primaria/50"
         aria-expanded={isOpen}
       >
         Filtrar dados
@@ -50,14 +50,14 @@ const FilterStatusDashBoard = ({ selectedStatus, onChangeStatus }) => {
         <div className="absolute right-0 top-full mt-2 w-[200px] md:w-[211px] rounded-md border border-cinza6 bg-clara4 p-3 shadow-md">
           {filterGroups.map((group, groupIndex) => (
             <div key={group.title} className={groupIndex > 0 ? "mt-4" : ""}>
-              <p className="text-sm md:text-[17px] text-texto2 font-normal font-['Open Sans'] tracking-tight underline">
+              <p className="text-sm md:text-[17px] text-texto2 font-normal font-openSans tracking-tight underline">
                 {group.title}
               </p>
               {group.options.map((option) => (
                 <label
                   key={option.id}
                   htmlFor={option.id}
-                  className="mt-2 flex cursor-pointer items-center text-sm md:text-[15px] text-texto2 font-normal font-['Open Sans'] tracking-tight"
+                  className="mt-2 flex cursor-pointer items-center text-sm md:text-[15px] text-texto2 font-normal font-openSans tracking-tight"
                 >
                   <input
                     type="checkbox"

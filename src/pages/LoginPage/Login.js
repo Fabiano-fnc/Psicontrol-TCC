@@ -46,10 +46,10 @@ const Login = () => {
         <img src={PsiText} alt="Psicontrol" className="h-auto w-[137px]" />
 
         <div className="mt-10 md:my-auto">
-          <h1 className="scale-y-125 font-['Oswald-Bold',Helvetica] text-[24px] font-bold text-white md:text-[30px]">
+          <h1 className="scale-y-125 font-ubuntu text-[24px] font-bold text-white md:text-[30px]">
             Vamos Começar!
           </h1>
-          <p className="mt-2 max-w-[260px] font-['Questrial-Regular',Helvetica] text-[15px] text-white md:text-[19px]">
+          <p className="mt-2 max-w-[260px] font-openSans text-[15px] text-white md:text-[19px]">
             Faça o login com seu e-mail profissional.
           </p>
         </div>

@@ -6,6 +6,7 @@ import {
   showSaveToast,
   showDeleteToast,
   showLastMonthToast,
+  showRepeatSuccessToast,
 } from "./components/toastIncomePage";
 
 const formatCurrency = (value) => {
@@ -141,9 +142,9 @@ const IncomePage = () => {
         const result = await response.json();
         setRevenues((prevRevenues) => [...prevRevenues, ...result.newRevenues]);
         setExpenses((prevExpenses) => [...prevExpenses, ...result.newExpenses]);
+        showRepeatSuccessToast();
       } else if (response.status === 400) {
-        // Exibe a notificação de erro com Toastify quando o mês já tem lançamentos
-        showLastMonthToast(); // Exibe a notificação de sucesso
+        showLastMonthToast();
       } else {
         console.error("Erro ao duplicar entradas:", response.statusText);
       }
@@ -414,22 +415,22 @@ const IncomePage = () => {
 
   const itemRowClass = "mt-2 flex items-center gap-3";
   const valueBoxClass =
-    "flex w-[120px] shrink-0 items-center justify-center rounded-[15px] border-[2px] border-cinza6 bg-neutral-100 p-2 text-sm text-gray-700 md:w-[140px] md:text-base";
+    "flex w-[120px] shrink-0 items-center justify-center rounded-xl border border-cinza6 bg-bg1 p-2 text-sm text-gray-700 md:w-[140px] md:text-base";
   const newInputClass =
-    "w-full min-w-0 rounded-md border border-cinza6 bg-neutral-100 p-2 text-gray-700 focus:border-cinza6 focus:outline focus:ring";
+    "w-full min-w-0 rounded-md border border-cinza6 bg-bg1 p-2 text-gray-700 focus:border-cinza6 focus:outline focus:ring";
   const deleteButtonClass =
     "shrink-0 rounded-full p-2 text-primaria hover:bg-clara3 active:opacity-50";
   const addButtonClass =
     "mt-4 flex items-center rounded-md px-1 py-1 transition-shadow hover:bg-clara3 active:opacity-50";
 
   return (
-    <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
+    <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
       {isModalOpen && (
         <div
           onClick={closeOnBackdrop(closeModal)}
           className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
-          <div className="w-full max-w-[335px] rounded-lg border-2 border-cinza6 bg-white p-6 shadow-lg">
-            <p className="mb-6 text-center text-lg md:text-[21px] font-medium font-['Ubuntu'] tracking-tight text-texto2">
+          <div className="w-full max-w-[335px] rounded-lg border border-cinza6 bg-white p-6 shadow-lg">
+            <p className="mb-6 text-center text-lg md:text-[21px] font-medium font-ubuntu tracking-tight text-texto2">
               Você tem certeza que deseja
               <span className="text-primaria"> excluir </span>
               este ítem?
@@ -453,7 +454,7 @@ const IncomePage = () => {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-[727px] rounded-[15px] border-2 border-cinza6 bg-neutral-100 p-4 shadow-md md:mt-6 md:p-6">
+      <div className="mx-auto w-full max-w-[727px] rounded-xl border border-cinza6 bg-bg1 p-4 shadow-md md:mt-6 md:p-6">
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
           <Months
             onMonthChange={handleMonthChange}
@@ -464,7 +465,7 @@ const IncomePage = () => {
           />
 
           <button
-            className="flex h-[40px] w-full items-center justify-center rounded-[10px] border-2 border-primaria bg-neutral-100 px-4 text-center font-['Ubuntu'] text-xs font-medium leading-tight text-primaria shadow drop-shadow-lastMonthShadow hover:bg-clara4 active:opacity-75 active:shadow-innerShadow sm:w-auto md:h-[46px]"
+            className="flex h-[40px] w-full items-center justify-center rounded-[10px] border-2 border-primaria bg-bg1 px-4 text-center font-ubuntu text-xs font-medium leading-tight text-primaria shadow drop-shadow-lastMonthShadow hover:bg-clara4 active:opacity-75 active:shadow-innerShadow sm:w-auto md:h-[46px]"
             onClick={repeatLastMonthEntries}
           >
             REPETIR LANÇAMENTOS DO MÊS ANTERIOR

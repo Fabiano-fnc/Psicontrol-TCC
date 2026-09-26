@@ -125,7 +125,7 @@ const ArchivedPage = () => {
   );
 
   return (
-    <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
+    <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
       <Link
         to="/customers"
         className="mb-4 inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-primaria underline hover:bg-clara3"
@@ -133,7 +133,7 @@ const ArchivedPage = () => {
         ← Voltar para pacientes
       </Link>
 
-      <div className="rounded-[15px] border-[3px] border-solid border-cinza6 bg-bg1">
+      <div className="rounded-xl border border-solid border-cinza6 bg-bg1 shadow-card">
         <div className="px-4 pt-6 md:px-7">
           <div className="relative w-full md:w-[360px]">
             <input
@@ -141,7 +141,7 @@ const ArchivedPage = () => {
               placeholder={searchTerm ? "" : "Pesquisar"}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className={`h-[48px] md:h-[56px] w-full rounded-[15px] ${searchTerm ? "rounded-b-none" : ""} bg-clara3 pl-11 pr-12 text-texto2 focus:outline-none focus:ring-0 caret-primaria`}
+              className={`h-[48px] md:h-[56px] w-full rounded-xl ${searchTerm ? "rounded-b-none" : ""} bg-clara3 pl-11 pr-12 text-texto2 focus:outline-none focus:ring-0 caret-primaria`}
             />
             <div className="absolute left-1 top-1/2 -translate-y-1/2 transform">
               {searchTerm.length > 0 ? (
@@ -201,7 +201,7 @@ const ArchivedPage = () => {
           </div>
         </div>
 
-        <div className="mt-6 flex items-center justify-between border-b border-cinza6 px-4 pb-3 font-['Ubuntu'] text-lg font-medium leading-[21px] tracking-[0.09px] text-primaria md:px-8">
+        <div className="mt-6 flex items-center justify-between border-y border-cinza9 bg-clara4 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-texto3 md:px-8">
           <span>Pacientes Arquivados</span>
           <span>Ações</span>
         </div>
@@ -221,7 +221,7 @@ const ArchivedPage = () => {
               {visibleCustomers.map((customer) => (
                 <li
                   key={`customer-${customer.customer_id}`}
-                  className="flex items-center justify-between gap-4 border-b border-cinza6 px-4 py-3 last:border-b-0 md:px-8 md:py-4"
+                  className="flex items-center justify-between gap-4 border-b border-cinza9 px-4 py-3 last:border-b-0 md:px-8 md:py-4"
                 >
                   <span className="break-words text-base text-texto1 md:text-xl">
                     {customer.customer_name}

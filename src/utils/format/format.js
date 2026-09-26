@@ -32,3 +32,10 @@ export const formatPhone = (value) => {
     return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
   return `(${digits.slice(0, 2)}) ${digits.slice(2, 3)} ${digits.slice(3, 7)}-${digits.slice(7)}`;
 };
+
+// Valor em reais no padrão brasileiro: 2000 → "R$ 2.000,00".
+export const formatBRL = (value) =>
+  (Number(value) || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });

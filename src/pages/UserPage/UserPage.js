@@ -1,3 +1,4 @@
+import { notify } from "../../utils/notification/notify";
 import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect } from "react";
 import { CheckMessage, EditIcon, RefreshIcon } from "../../icons/icons";
@@ -246,7 +247,7 @@ const UserPage = () => {
       setIsEditingMessage(false);
     } catch (error) {
       console.error("Erro ao salvar a mensagem:", error);
-      alert("Erro ao salvar a mensagem. Tente novamente.");
+      notify.error("Erro ao salvar a mensagem. Tente novamente.");
     }
   };
 
@@ -306,18 +307,18 @@ const UserPage = () => {
   const infoLineClass = "mt-2 text-base md:text-[17px] font-normal tracking-tight text-texto1";
   const infoValueClass = "break-words text-texto2";
   const labelClass =
-    "mb-1 block text-sm md:text-base font-normal font-['Open Sans'] tracking-wide text-texto1";
+    "mb-1 block text-sm md:text-base font-normal font-openSans tracking-wide text-texto1";
   const inputClass =
-    "h-[50px] w-full rounded-[15px] border-2 border-cinza6 bg-neutral-100 px-[16px] text-sm font-normal font-['Open Sans'] text-texto2 focus:outline-none focus:ring";
+    "h-[50px] w-full rounded-xl border border-cinza6 bg-bg1 px-[16px] text-sm font-normal font-openSans text-texto2 focus:outline-none focus:ring";
   const boxClass =
-    "min-w-0 rounded-[25px] border-2 border-cinza6 bg-bg1 p-5 shadow md:p-6";
+    "min-w-0 rounded-2xl border border-cinza6 bg-bg1 p-5 shadow md:p-6";
 
   const ConfirmModal = ({ children, onCancel, onConfirm }) => (
     <div
       onClick={closeOnBackdrop(onCancel)}
       className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
-      <div className="w-full max-w-[335px] rounded-lg border-2 border-cinza6 bg-white p-6 shadow-lg">
-        <p className="mb-8 text-center text-lg md:text-[21px] font-medium font-['Ubuntu'] tracking-tight text-texto2">
+      <div className="w-full max-w-[335px] rounded-lg border border-cinza6 bg-white p-6 shadow-lg">
+        <p className="mb-8 text-center text-lg md:text-[21px] font-medium font-ubuntu tracking-tight text-texto2">
           {children}
         </p>
         <div className="flex justify-around">
@@ -339,12 +340,12 @@ const UserPage = () => {
   );
 
   return (
-    <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
+    <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
       <div className="mx-auto flex w-full max-w-[1076px] flex-col gap-4 md:gap-6">
         {/* Meus dados */}
         <div className={`relative ${boxClass}`}>
           <div className="mb-6 flex items-center justify-between gap-4">
-            <h2 className="text-lg md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+            <h2 className="text-lg md:text-[25px] font-medium font-ubuntu text-primaria">
               Meus dados
             </h2>
             <button
@@ -374,7 +375,7 @@ const UserPage = () => {
               </div>
 
               <div className="min-w-0">
-                <div className="mb-2 break-words text-xl font-medium font-['Ubuntu'] text-black">
+                <div className="mb-2 break-words text-xl font-medium font-ubuntu text-black">
                   {userData.user_name}
                 </div>
                 <div className={infoLineClass}>
@@ -406,7 +407,7 @@ const UserPage = () => {
 
             {/* Segunda coluna */}
             <div className="min-w-0 border-t border-cinza9 pt-6 md:border-t-0 md:pt-0">
-              <div className="mb-2 text-xl font-medium font-['Ubuntu'] text-black">
+              <div className="mb-2 text-xl font-medium font-ubuntu text-black">
                 Dados para recibo
               </div>
               <div className={infoLineClass}>
@@ -587,10 +588,10 @@ const UserPage = () => {
 
       {isEditing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
-          <div className="max-h-[92vh] w-full max-w-[1076px] overflow-y-auto rounded-[15px] border-2 border-cinza6 bg-neutral-100 p-5 shadow-lg md:p-8">
+          <div className="max-h-[92vh] w-full max-w-[1076px] overflow-y-auto rounded-xl border border-cinza6 bg-bg1 p-5 shadow-lg md:p-8">
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12 md:px-4">
               <div className="min-w-0 space-y-6">
-                <h2 className="text-lg md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+                <h2 className="text-lg md:text-[25px] font-medium font-ubuntu text-primaria">
                   Editar meus dados
                 </h2>
 
@@ -662,7 +663,7 @@ const UserPage = () => {
               </div>
 
               <div className="min-w-0 space-y-6">
-                <h2 className="text-lg md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+                <h2 className="text-lg md:text-[25px] font-medium font-ubuntu text-primaria">
                   Dados para recibo
                 </h2>
 
@@ -695,8 +696,8 @@ const UserPage = () => {
                 <div>
                   <label className={labelClass}>Importar logotipo</label>
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex h-[50px] min-w-0 flex-1 items-center rounded-[15px] border-2 border-cinza6 bg-neutral-100 px-[16px] sm:max-w-[260px]">
-                      <span className="truncate text-sm font-normal font-['Open Sans'] text-texto2/70">
+                    <div className="flex h-[50px] min-w-0 flex-1 items-center rounded-xl border border-cinza6 bg-bg1 px-[16px] sm:max-w-[260px] shadow-card">
+                      <span className="truncate text-sm font-normal font-openSans text-texto2/70">
                         {fileName}
                       </span>
                     </div>

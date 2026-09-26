@@ -1,7 +1,7 @@
 import { Trash, UnarchiveIcon } from "../../../icons/icons";
 
 const itemClass =
-  "group flex w-full items-center gap-2 px-6 py-2.5 text-left font-['Open Sans'] text-[15px] font-normal leading-5 tracking-normal text-texto2 underline hover:bg-clara3 hover:text-texto2/70";
+  "group flex w-full items-center gap-2 px-6 py-2.5 text-left font-openSans text-[15px] font-normal leading-5 tracking-normal text-texto2 underline hover:bg-clara3 hover:text-texto2/70";
 
 const DropDown = ({ customerId, onDelete, onUnarchive }) => {
   return (

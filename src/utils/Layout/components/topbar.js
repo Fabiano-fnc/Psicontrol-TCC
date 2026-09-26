@@ -85,7 +85,7 @@ const TopBar = ({ onMenuClick }) => {
   const pageInfo = getPageTitle();
 
   return (
-    <div className="fixed top-0 left-0 right-0 md:left-[265px] z-30 flex justify-between items-center gap-3 p-4 max-md:pt-12 bg-bg1 rounded-b-[35px] md:rounded-b-none drop-shadow-topbatShadow md:drop-shadow-none">
+    <div className="fixed top-0 left-0 right-0 md:left-[265px] z-30 flex items-center justify-between gap-3 border-b border-cinza9 bg-bg1/95 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur md:px-8 md:py-5">
       {/* Botão hambúrguer visível apenas em telas menores */}
       <button
         className="md:hidden rounded-full p-1 hover:bg-clara3"
@@ -111,12 +111,12 @@ const TopBar = ({ onMenuClick }) => {
       <img
         src={BaseIcon}
         alt="Base Icon"
-        className="w-[55px] md:hidden opacity-100"
+        className="w-[40px] md:hidden"
       />
 
       {/* Nome da página */}
       <h2
-        className={`md:text-[28px] text-[15px] text-primaria font-semibold text-right md:text-left md:mr-auto ${pageInfo.margin}`}
+        className={`font-ubuntu text-[15px] font-semibold leading-tight text-texto1 text-right md:mr-auto md:text-left md:text-[24px] ${pageInfo.margin}`}
       >
         {pageInfo.title}
       </h2>

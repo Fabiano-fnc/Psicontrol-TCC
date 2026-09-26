@@ -75,7 +75,7 @@ export const Months = ({
       >
         <div className="flex items-center gap-2">
           <VerifyIcon />
-          <span className="text-texto4 md:text-[21px] text-[16px] font-medium font-['Ubuntu'] tracking-tight">
+          <span className="text-texto4 md:text-[21px] text-[16px] font-medium font-ubuntu tracking-tight">
             <span className="block md:hidden">{`${monthsInRangeShort[selectedMonth - 1]}/${selectedYear.toString().slice(-2)}`}</span>
             <span className="hidden md:block">{`${monthsInRange[selectedMonth - 1]}/${selectedYear.toString().slice(-2)}`}</span>
           </span>
@@ -83,11 +83,11 @@ export const Months = ({
         <SetaIcon />
       </button>
       {isModalOpen && (
-        <div className="w-[213px] h-[277px] md:w-full max-w-full flex flex-col items-center mt-2 bg-neutral-100 shadow-lg rounded-2xl border border-[#81a0ae] p-2 absolute z-50">
+        <div className="w-[213px] h-[277px] md:w-full max-w-full flex flex-col items-center mt-2 bg-bg1 shadow-lg rounded-2xl border border-[#81a0ae] p-2 absolute z-50">
           <div className="flex items-center justify-between w-full px-5 py-1 mb-2 border-b border-[#cac4d0]">
             <button
               onClick={() => setShowingMonths(true)}
-              className={`text-[#5c5c5c] text-sm font-normal font-['Open Sans'] tracking-tight hover:text-black ${
+              className={`text-[#5c5c5c] text-sm font-normal font-openSans tracking-tight hover:text-black ${
                 showingMonths ? "font-bold text-black" : ""
               }`}
             >
@@ -95,7 +95,7 @@ export const Months = ({
             </button>
             <button
               onClick={() => setShowingMonths(false)}
-              className={`text-[#5c5c5c] text-sm font-normal font-['Open Sans'] tracking-tight hover:text-black ${
+              className={`text-[#5c5c5c] text-sm font-normal font-openSans tracking-tight hover:text-black ${
                 !showingMonths ? "font-bold text-black" : ""
               }`}
             >

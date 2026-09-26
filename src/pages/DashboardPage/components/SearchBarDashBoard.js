@@ -69,7 +69,7 @@ const SearchBarDashBoard = ({ patients, onConfirmPatient, onClose }) => {
         placeholder={searchTerm ? "" : "Pesquisar paciente para vincular"}
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-        className={`h-[44px] md:h-[56px] w-full rounded-lg md:rounded-[15px] ${
+        className={`h-[44px] md:h-[56px] w-full rounded-lg md:rounded-xl ${
           searchTerm ? "md:rounded-b-none rounded-b-none" : ""
         } bg-clara3 pl-11 pr-10 text-texto2 text-sm md:text-base shadow-md focus:outline-none focus:ring-0 caret-primaria`}
       />

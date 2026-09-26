@@ -58,7 +58,7 @@ const ProfileCustomerPage = () => {
 
   if (error || !customer) {
     return (
-      <div className="w-full px-4 pb-8 pt-32 text-texto2 md:px-6 md:pt-28">
+      <div className="w-full px-4 pb-8 pt-24 text-texto2 md:px-6 md:pt-28">
         {error || "Carregando..."}
       </div>
     );
@@ -126,13 +126,13 @@ const ProfileCustomerPage = () => {
   };
 
   const lineClass =
-    "mt-2 text-base md:text-F17 font-normal font-['Open Sans'] tracking-normal text-texto1";
+    "mt-2 text-base md:text-F17 font-normal font-openSans tracking-normal text-texto1";
   const valueClass = "break-words text-texto2";
   const orNotInformed = (value) => value || "Não informado";
 
   return (
-    <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
-      <div className="relative mx-auto w-full max-w-[1076px] rounded-[15px] border-2 border-cinza6 bg-bg1 p-5 text-F15 shadow md:p-6">
+    <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
+      <div className="relative mx-auto w-full max-w-[1076px] rounded-xl border border-cinza6 bg-bg1 p-5 text-F15 shadow md:p-6">
         <div
           className="absolute right-3 top-3"
           ref={activeDropdown === customer.customer_id ? dropdownRef : undefined}
@@ -156,7 +156,7 @@ const ProfileCustomerPage = () => {
           )}
         </div>
 
-        <h2 className="mb-6 pr-12 text-xl md:text-F25 font-medium font-['Ubuntu'] text-primaria md:ml-5">
+        <h2 className="mb-6 pr-12 text-xl md:text-F25 font-medium font-ubuntu text-primaria md:ml-5">
           Conta do paciente
         </h2>
 
@@ -166,7 +166,7 @@ const ProfileCustomerPage = () => {
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primaria text-white">
                 {customer.customer_name ? customer.customer_name.charAt(0) : ""}
               </div>
-              <h3 className="break-words text-lg md:text-F20 font-medium font-['Ubuntu'] tracking-normal">
+              <h3 className="break-words text-lg md:text-F20 font-medium font-ubuntu tracking-normal">
                 {customer.customer_name}
               </h3>
             </div>
@@ -224,13 +224,13 @@ const ProfileCustomerPage = () => {
 
       {isEditing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM bg-opacity-30 p-4 backdrop-blur-[6px]">
-          <div className="max-h-[92vh] w-full max-w-[1076px] overflow-y-auto rounded-[25px] border-2 border-cinza6 bg-bg1 p-5 shadow-lg md:p-8">
+          <div className="max-h-[92vh] w-full max-w-[1076px] overflow-y-auto rounded-2xl border border-cinza6 bg-bg1 p-5 shadow-lg md:p-8">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:px-6">
-              <h2 className="text-[20px] md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+              <h2 className="text-[20px] md:text-[25px] font-medium font-ubuntu text-primaria">
                 Editar Paciente
               </h2>
               <div className="hidden items-center justify-between gap-4 md:flex">
-                <h3 className="text-[20px] md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+                <h3 className="text-[20px] md:text-[25px] font-medium font-ubuntu text-primaria">
                   Dados para recibo
                 </h3>
                 <UsePatientDataButton onClick={handleUsePatientData} />
@@ -246,7 +246,7 @@ const ProfileCustomerPage = () => {
               isEditing
               receiptHeader={
                 <div className="flex flex-wrap items-center justify-between gap-3 md:hidden">
-                  <h3 className="text-[20px] font-medium font-['Ubuntu'] text-primaria">
+                  <h3 className="text-[20px] font-medium font-ubuntu text-primaria">
                     Dados para recibo
                   </h3>
                   <UsePatientDataButton onClick={handleUsePatientData} />
