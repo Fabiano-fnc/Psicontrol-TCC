@@ -1,6 +1,33 @@
 import React, { useState, useEffect } from "react";
 import { CheckMessage, EditIcon, RefreshIcon } from "../../icons/icons";
 import { showAlteredToast } from "./components/toastUserPage";
+import { showErrorToast } from "../../utils/notification/toastify";
+
+const onlyDigits = (value) => (value || "").replace(/\D/g, "");
+
+const formatDocument = (value) => {
+  const digits = onlyDigits(value).slice(0, 14);
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+};
+
+const formatPhone = (value) => {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10)
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 3)} ${digits.slice(3, 7)}-${digits.slice(7)}`;
+};
 
 const UserPage = () => {
   const [userData, setUserData] = useState({
@@ -14,7 +41,8 @@ const UserPage = () => {
     image: null,
   });
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(null);
+  const isEditing = draft !== null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendars, setSelectedCalendars] = useState(new Set());
@@ -124,18 +152,43 @@ const UserPage = () => {
     }
   };
 
+  const openEdit = () => {
+    setDraft({
+      ...userData,
+      user_document: formatDocument(userData.user_cpf || userData.user_cnpj),
+      user_phone: formatPhone(userData.user_phone),
+    });
+    setFileName("nomedoarquivo.png");
+  };
+
+  const closeEdit = () => setDraft(null);
+
   const handleSave = async () => {
+    const documentDigits = onlyDigits(draft.user_document);
+    if (![0, 11, 14].includes(documentDigits.length)) {
+      showErrorToast("CPF deve ter 11 dígitos e CNPJ 14 dígitos.");
+      return;
+    }
+
+    const phoneDigits = onlyDigits(draft.user_phone);
+    if (phoneDigits.length > 0 && phoneDigits.length < 10) {
+      showErrorToast("Telefone incompleto. Informe DDD e número.");
+      return;
+    }
+
+    const isCnpj = documentDigits.length === 14;
+
     try {
       const formData = new FormData();
-      formData.append("user_cpf", userData.user_cpf || "");
-      formData.append("user_cnpj", userData.user_cnpj || "");
-      formData.append("crp_number", userData.crp_number || "");
-      formData.append("user_phone", userData.user_phone || "");
-      formData.append("user_message", userData.user_message || "");
-      formData.append("clinic_name", userData.clinic_name || "");
+      formData.append("user_cpf", isCnpj ? "" : documentDigits);
+      formData.append("user_cnpj", isCnpj ? documentDigits : "");
+      formData.append("crp_number", (draft.crp_number || "").trim());
+      formData.append("user_phone", phoneDigits);
+      formData.append("user_message", draft.user_message || "");
+      formData.append("clinic_name", (draft.clinic_name || "").trim());
 
-      if (userData.image instanceof File) {
-        formData.append("image", userData.image);
+      if (draft.image instanceof File) {
+        formData.append("image", draft.image);
       }
 
       const response = await fetch(
@@ -150,20 +203,29 @@ const UserPage = () => {
       );
 
       if (!response.ok) {
-        throw new Error("Erro ao salvar os dados do usuário.");
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || "Erro ao salvar os dados do usuário.");
       }
 
       const updatedData = await response.json();
       setUserData((prevData) => ({
         ...prevData,
-        ...updatedData,
+        user_cpf: updatedData.user_cpf,
+        user_cnpj: updatedData.user_cnpj,
+        crp_number: updatedData.crp_number,
+        user_phone: updatedData.user_phone,
+        user_message: updatedData.user_message,
+        clinic_name: updatedData.clinic_name,
+        image: updatedData.image,
       }));
 
-      setRefreshKey((prevKey) => prevKey + 1);
-      setIsEditing(false);
+      setDraft(null);
       showAlteredToast();
     } catch (error) {
       console.error(error);
+      showErrorToast(
+        error.message || "Não foi possível salvar. Tente novamente."
+      );
     }
   };
 
@@ -210,21 +272,23 @@ const UserPage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const formatted =
+      name === "user_document"
+        ? formatDocument(value)
+        : name === "user_phone"
+        ? formatPhone(value)
+        : value;
 
-    if (name === "user_message") {
-      console.log(`Mensagem atualizada: ${value}`);
-    }
-
-    setUserData((prevData) => ({
-      ...prevData,
-      [name]: value,
+    setDraft((prevDraft) => ({
+      ...prevDraft,
+      [name]: formatted,
     }));
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setUserData((prevData) => ({
-      ...prevData,
+    setDraft((prevDraft) => ({
+      ...prevDraft,
       image: file,
     }));
     setFileName(file ? file.name : "");
@@ -245,100 +309,132 @@ const UserPage = () => {
     closeConfirmationModal();
   };
 
+  const infoLineClass = "mt-2 text-base md:text-[17px] font-normal tracking-tight text-texto1";
+  const infoValueClass = "break-words text-texto2";
+  const labelClass =
+    "mb-1 block text-sm md:text-base font-normal font-['Open Sans'] tracking-wide text-texto1";
+  const inputClass =
+    "h-[50px] w-full rounded-[15px] border-2 border-cinza6 bg-neutral-100 px-[16px] text-sm font-normal font-['Open Sans'] text-texto2 focus:outline-none focus:ring";
+  const boxClass =
+    "min-w-0 rounded-[25px] border-2 border-cinza6 bg-bg1 p-5 shadow md:p-6";
+
+  const ConfirmModal = ({ children, onCancel, onConfirm }) => (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
+      <div className="w-full max-w-[335px] rounded-lg border-2 border-cinza6 bg-white p-6 shadow-lg">
+        <p className="mb-8 text-center text-lg md:text-[21px] font-medium font-['Ubuntu'] tracking-tight text-texto2">
+          {children}
+        </p>
+        <div className="flex justify-around">
+          <button
+            onClick={onCancel}
+            className="h-10 w-[100px] rounded-full border border-primaria bg-white text-center font-semibold text-primaria hover:bg-clara4"
+          >
+            Não
+          </button>
+          <button
+            onClick={onConfirm}
+            className="h-10 w-[100px] rounded-full bg-primaria text-center font-semibold text-white hover:opacity-90"
+          >
+            Sim
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col p-6 overflow-y-auto overflow-x-hidden ">
- 
-      <>
-        <div className="relative md:w-[1076px] w-full mx-auto h-auto bg-bg1 p-6 border-2 border-cinza6 rounded-[25px] md:mt-28 mt-28 mb-3">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-[#0082ba] md:text-[25px] text-[16px] font-medium font-['Ubuntu']">
+    <div className="w-full px-4 pb-8 pt-32 md:px-6 md:pt-28">
+      <div className="mx-auto flex w-full max-w-[1076px] flex-col gap-4 md:gap-6">
+        {/* Meus dados */}
+        <div className={`relative ${boxClass}`}>
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <h2 className="text-lg md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
               Meus dados
             </h2>
             <button
-              onClick={() => setIsEditing(true)}
-              className="text-[#0082ba] drop-shadow-editShadow text-sm underline flex items-center"
+              onClick={openEdit}
+              className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-primaria underline drop-shadow-editShadow hover:bg-clara3"
             >
-              <div className="mr-1 mt-[-6px] relative">Editar dados</div>
+              Editar dados
               <EditIcon />
             </button>
           </div>
 
-          {/* Ajuste no layout para ser responsivo */}
-          <div className="flex flex-col md:flex-row justify-between">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-10">
             {/* Primeira coluna */}
-            <div className="flex md:w-[360px] w-full mb-6 md:mb-0">
-              <div className="md:w-10 md:h-10 w-7 h-7 md:aspect-square aspect-square bg-[#33b8d1] rounded-full flex justify-center items-center">
+            <div className="flex min-w-0 gap-4">
+              <div className="flex aspect-square h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bgM">
                 {userData.photoUrl ? (
                   <img
                     src={userData.photoUrl}
                     alt="Foto de perfil"
-                    className="w-full h-full object-cover rounded-full"
+                    className="h-full w-full rounded-full object-cover"
                   />
                 ) : (
-                  <span className="text-white font-bold text-xl">
+                  <span className="text-xl font-bold text-white">
                     {userData.user_name.charAt(0)}
                   </span>
                 )}
               </div>
 
-              <div>
-                <div className="text-black text-xl font-medium font-['Ubuntu'] ml-4 mb-2">
+              <div className="min-w-0">
+                <div className="mb-2 break-words text-xl font-medium font-['Ubuntu'] text-black">
                   {userData.user_name}
                 </div>
-                <div className="text-[#232323] ml-4 text-[17px] font-normal tracking-tight">
+                <div className={infoLineClass}>
                   <span>CPF/CNPJ: </span>
-                  <span className="text-[#5c5c5c]">
-                    {userData.user_cpf || userData.user_cnpj}
+                  <span className={infoValueClass}>
+                    {formatDocument(userData.user_cpf || userData.user_cnpj)}
                   </span>
                 </div>
-                <div className="text-[#232323] ml-4 text-[17px] font-normal tracking-tight mt-2">
+                <div className={infoLineClass}>
                   <span>CRP: </span>
-                  <span className="text-[#5c5c5c]">{userData.crp_number}</span>
+                  <span className={infoValueClass}>{userData.crp_number}</span>
                 </div>
-                <div className="flex ml-4 text-[#232323] text-[17px] font-normal tracking-tight mt-2 items-start">
-                  <span className="mr-1 whitespace-nowrap self-start">E-mail:</span>
-                  <span className="text-[#5c5c5c] break-all">
+                <div className={infoLineClass}>
+                  <span>E-mail: </span>
+                  <span className={`${infoValueClass} [overflow-wrap:anywhere]`}>
                     {userData.user_email}
                   </span>
                 </div>
-
-
-                <div className="text-[#232323] ml-4 text-[17px] font-normal tracking-tight mt-2">
+                <div className={infoLineClass}>
                   <span>Telefone: </span>
-                  <span className="text-[#5c5c5c]">{userData.user_phone}</span>
+                  <span className={infoValueClass}>
+                    {formatPhone(userData.user_phone)}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Segunda coluna */}
-            <div className="md:w-[316px] w-full mx-[44px]">
-              <div className="text-black text-xl  font-medium font-['Ubuntu'] mb-2">
+            <div className="min-w-0 border-t border-cinza9 pt-6 md:border-t-0 md:pt-0">
+              <div className="mb-2 text-xl font-medium font-['Ubuntu'] text-black">
                 Dados para recibo
               </div>
-              <div className="text-[#232323] text-[17px] font-normal tracking-tight">
+              <div className={infoLineClass}>
                 <span>Nome/Clínica: </span>
-                <span className="text-[#5c5c5c]">{userData.clinic_name}</span>
+                <span className={infoValueClass}>{userData.clinic_name}</span>
               </div>
-              <div className="text-[#232323] text-[17px] font-normal tracking-tight mt-2">
+              <div className={infoLineClass}>
                 <span>CPF/CNPJ: </span>
-                <span className="text-[#5c5c5c]">
-                  {userData.user_cpf || userData.user_cnpj}
+                <span className={infoValueClass}>
+                  {formatDocument(userData.user_cpf || userData.user_cnpj)}
                 </span>
               </div>
-              <div className="text-[#232323] text-[17px] font-normal tracking-tight mt-2">
+              <div className={infoLineClass}>
                 <span>CRP: </span>
-                <span className="text-[#5c5c5c]">{userData.crp_number}</span>
+                <span className={infoValueClass}>{userData.crp_number}</span>
               </div>
-              <div className="text-[#232323] text-[17px] font-normal tracking-tight mt-2">
+              <div className={infoLineClass}>
                 <span>Logo: </span>
-                <span className="text-[#5c5c5c]">
+                <span className={`${infoValueClass} break-all`}>
                   {userData.image
                     ? userData.image instanceof File
                       ? userData.image.name
                       : typeof userData.image === "string" &&
                         userData.image.includes("/")
-                        ? userData.image.split("/").pop()
-                        : userData.image
+                      ? userData.image.split("/").pop()
+                      : userData.image
                     : "(Imagem não carregada)"}
                 </span>
               </div>
@@ -346,45 +442,38 @@ const UserPage = () => {
           </div>
         </div>
 
-
-
-
-        <div className="md:flex flex-1 md:mx-auto w-auto md:space-x-4 items-start">
-          {/* Box "Minhas agendas" */}
-          <div className="md:w-[540px] w-auto md:h-[370px] h-[385px] bg-bg1 shadow p-6 border-2 border-cinza6 rounded-[25px] overflow-hidden">
-            <div className="flex justify-between">
-              <h3 className="text-[#0082ba] md:w-[200px] w-[200px] text-[20px] font-medium">
+        <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
+          {/* Minhas agendas */}
+          <div className={boxClass}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg md:text-[20px] font-medium text-primaria">
                 Minhas agendas
               </h3>
               <button
                 onClick={openModalToChangeAccount}
-                className="text-[#0082ba] text-sm underline flex items-center md:ml-[0px] ml-[80px]">
-                <span className="relative md:w-32 w-[100px] drop-shadow-editShadow -mt-1">
-                  Trocar de conta
-                </span>
-                <span className="md:ml-1 ml-2">
-                  <RefreshIcon />
-                </span>
+                className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-primaria underline drop-shadow-editShadow hover:bg-clara3"
+              >
+                Trocar de conta
+                <RefreshIcon />
               </button>
             </div>
 
-            <p className="mt-8 ml-10 font-semibold">{userData.user_name}</p>
-            <p className="text-[#8d8d8d] ml-10">
-              <span className="text-[#5c5c5c]">E-mail:</span>{" "}
-              {userData.user_email}
-            </p>
+            <div className="mt-6 md:px-4">
+              <p className="break-words font-semibold">{userData.user_name}</p>
+              <p className="text-texto3 [overflow-wrap:anywhere]">
+                <span className="text-texto2">E-mail:</span>{" "}
+                {userData.user_email}
+              </p>
 
-
-            <div className="mt-6 ml-10">
-              <h4 className="text-[#232323] text-lg font-medium">
+              <h4 className="mt-6 text-lg font-medium text-texto1">
                 Agendas sincronizadas
               </h4>
 
-              <div className="mt-3 space-y-4 max-h-[120px] overflow-y-auto">
+              <div className="mt-3 max-h-[160px] space-y-4 overflow-y-auto pr-2">
                 {calendars.map((calendar) => (
-                  <div
+                  <label
                     key={calendar.calendar_id}
-                    className="flex items-center space-x-3"
+                    className="flex cursor-pointer items-center gap-3"
                   >
                     <input
                       type="checkbox"
@@ -392,10 +481,11 @@ const UserPage = () => {
                       onChange={() =>
                         openConfirmationModal(calendar.calendar_id)
                       }
-                      className={`appearance-none w-5 h-5 rounded-full border-2 transition-colors cursor-pointer ${selectedCalendars.has(calendar.calendar_id)
-                        ? "bg-[#0082ba] border-[#0082ba] shadow-inner"
-                        : "bg-white border-gray-300 opacity-50"
-                        }`}
+                      className={`h-5 w-5 shrink-0 cursor-pointer appearance-none rounded-full border-2 transition-colors ${
+                        selectedCalendars.has(calendar.calendar_id)
+                          ? "border-primaria bg-primaria shadow-inner"
+                          : "border-gray-300 bg-white opacity-50"
+                      }`}
                       style={{
                         boxShadow: selectedCalendars.has(calendar.calendar_id)
                           ? "inset 0 0 0 3px white"
@@ -403,315 +493,260 @@ const UserPage = () => {
                       }}
                     />
                     <span
-                      className={`font-medium ${selectedCalendars.has(calendar.calendar_id)
-                        ? "text-[#5c5c5c]"
-                        : "text-gray-500 opacity-50"
-                        }`}
+                      className={`min-w-0 break-words font-medium ${
+                        selectedCalendars.has(calendar.calendar_id)
+                          ? "text-texto2"
+                          : "text-gray-500 opacity-50"
+                      }`}
                     >
                       {calendar.calendar_name}
                     </span>
-                  </div>
+                  </label>
                 ))}
               </div>
             </div>
+          </div>
 
-            {isModalOpen && (
-              <div className="fixed inset-0 z-30 flex items-center backdrop-blur-[6px] justify-center bg-[#33B8D14D] bg-opacity-30">
-                <div className="w-[335px] h-[202px] bg-white rounded-lg border-2 border-[#81a0ae] p-6 shadow-lg transform translate-x-[117px] translate-y-[-169px]">
-                  <div className="w-full text-center mx-auto mb-12">
-                    <span className="text-[#5c5c5c] text-[21px] font-medium font-['Ubuntu'] tracking-tight">
-                      Você tem certeza que <br />
-                      deseja
-                      <span className="text-[#0082ba]"> trocar de conta? </span>
-                    </span>
-                  </div>
+          {/* Mensagem de cobrança */}
+          <div className={`flex flex-col ${boxClass}`}>
+            <div className="mb-4 flex items-center justify-between gap-2">
+              <h3 className="text-lg md:text-[20px] font-medium text-primaria">
+                Mensagem de cobrança
+              </h3>
+              {isEditingMessage ? (
+                <button
+                  onClick={saveMessage}
+                  className="rounded-full p-2 text-sm text-primaria hover:bg-clara3"
+                  aria-label="Salvar mensagem"
+                >
+                  <CheckMessage />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsEditingMessage(true)}
+                  className="rounded-full p-2 text-sm text-primaria underline drop-shadow-editShadow hover:bg-clara3"
+                  aria-label="Editar mensagem"
+                >
+                  <EditIcon />
+                </button>
+              )}
+            </div>
 
-                  <div className="flex justify-around">
-                    <button
-                      onClick={closeModal}
-                      className="h-10 w-[100px] bg-white border border-[#0082ba] text-[#0082ba] rounded-full text-center font-semibold hover:bg-[#e6f4f8]"
-                    >
-                      Não
-                    </button>
-                    <button
-                      onClick={() => {
-                        closeModal();
-                        handleChangeAccount();
-                      }}
-                      className="h-10 w-[100px] bg-[#0082ba] text-white rounded-full text-center font-semibold hover:bg-[#007bb8]"
-                    >
-                      Sim
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-
-
-            {/* Modal de Confirmação */}
-            {isConfirmationModalOpen && (
-              <div className="fixed inset-0 z-30 flex items-center justify-center backdrop-blur-[6px] bg-[#33B8D14D] bg-opacity-30">
-                <div className="w-[335px] h-[202px] bg-white rounded-lg border-2 border-[#81a0ae] p-6 shadow-lg transform translate-x-[117px] translate-y-[-169px]">
-                  <div className="w-full text-center mx-auto mb-12">
-                    <span className="text-[#5c5c5c] text-[21px] font-medium font-['Ubuntu'] tracking-tight">
-                      Você tem certeza que deseja
-                      <br />
-                      {selectedCalendars.has(activeCalendarId) ? (
-                        <span className="text-[#0082ba]">
-                          desativar a agenda?
-                        </span>
-                      ) : (
-                        <span className="text-[#0082ba]">ativar a agenda?</span>
-                      )}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-around">
-                    <button
-                      onClick={closeConfirmationModal}
-                      className="h-10 w-[100px] bg-white border border-[#0082ba] text-[#0082ba] rounded-full text-center font-semibold hover:bg-[#e6f4f8]"
-                    >
-                      Não
-                    </button>
-                    <button
-                      onClick={() => handleToggleCalendar(activeCalendarId)}
-                      className="h-10 w-[100px] bg-[#0082ba] text-white rounded-full text-center font-semibold hover:bg-[#007bb8]"
-                    >
-                      Sim
-                    </button>
-                  </div>
-                </div>
+            {isEditingMessage ? (
+              <textarea
+                name="user_message"
+                value={userData.user_message || ""}
+                onChange={(e) =>
+                  setUserData((prevData) => ({
+                    ...prevData,
+                    [e.target.name]: e.target.value,
+                  }))
+                }
+                className="h-[250px] w-full resize-none overflow-y-auto rounded-md border border-gray-300 bg-white p-4 text-[15px] text-texto1"
+                placeholder="Escreva sua mensagem de cobrança aqui..."
+              />
+            ) : (
+              <div className="h-[250px] overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-gray-300 bg-white p-4 text-[15px] text-texto1">
+                {userData.user_message || (
+                  <span className="text-gray-400">
+                    Escreva sua mensagem de cobrança aqui...
+                  </span>
+                )}
               </div>
             )}
           </div>
+        </div>
+      </div>
 
+      {isModalOpen && (
+        <ConfirmModal
+          onCancel={closeModal}
+          onConfirm={() => {
+            closeModal();
+            handleChangeAccount();
+          }}
+        >
+          Você tem certeza que deseja
+          <span className="text-primaria"> trocar de conta?</span>
+        </ConfirmModal>
+      )}
 
-          <div className="md:relative md:my-0 my-[10px]">
-            <div className="md:w-[520px] w-auto  h-[370px] bg-bg1 p-6 border-2 border-cinza6 rounded-[25px] overflow-hidden">
-              <div className="flex  justify-between items-center mb-4">
-                <h3 className="text-[#0082ba] md:text-[20px] text-[15px] font-medium">
-                  Mensagem de cobrança
-                </h3>
-                {isEditingMessage ? (
-                  <button
-                    onClick={saveMessage}
-                    className="text-[#0082ba] text-sm"
-                  >
-                    <CheckMessage />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setIsEditingMessage(true)}
-                    className="text-[#0082ba] drop-shadow-editShadow text-sm underline"
-                  >
-                    <EditIcon />
-                  </button>
-                )}
+      {isConfirmationModalOpen && (
+        <ConfirmModal
+          onCancel={closeConfirmationModal}
+          onConfirm={() => handleToggleCalendar(activeCalendarId)}
+        >
+          Você tem certeza que deseja{" "}
+          <span className="text-primaria">
+            {selectedCalendars.has(activeCalendarId)
+              ? "desativar a agenda?"
+              : "ativar a agenda?"}
+          </span>
+        </ConfirmModal>
+      )}
+
+      {isEditing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
+          <div className="max-h-[92vh] w-full max-w-[1076px] overflow-y-auto rounded-[15px] border-2 border-cinza6 bg-neutral-100 p-5 shadow-lg md:p-8">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12 md:px-4">
+              <div className="min-w-0 space-y-6">
+                <h2 className="text-lg md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+                  Editar meus dados
+                </h2>
+
+                <div>
+                  <label className={labelClass}>Nome</label>
+                  <input
+                    type="text"
+                    value={draft.user_name || ""}
+                    disabled
+                    title="Vem da sua conta Google"
+                    className={`${inputClass} cursor-not-allowed opacity-60`}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>E-mail</label>
+                  <input
+                    type="email"
+                    value={draft.user_email || ""}
+                    disabled
+                    title="Vem da sua conta Google"
+                    className={`${inputClass} cursor-not-allowed opacity-60`}
+                  />
+                  <p className="ml-2 mt-1 text-xs text-texto3">
+                    Nome e e-mail vêm da sua conta Google.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className={labelClass}>Telefone</label>
+                    <input
+                      type="text"
+                      name="user_phone"
+                      value={draft.user_phone || ""}
+                      onChange={handleChange}
+                      placeholder="(00) 0 0000-0000"
+                      inputMode="tel"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>CPF/CNPJ</label>
+                    <input
+                      type="text"
+                      name="user_document"
+                      value={draft.user_document || ""}
+                      onChange={handleChange}
+                      placeholder="CPF ou CNPJ"
+                      inputMode="numeric"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="sm:w-1/2 sm:pr-2">
+                  <label className={labelClass}>CRP</label>
+                  <input
+                    type="text"
+                    name="crp_number"
+                    maxLength={15}
+                    value={draft.crp_number || ""}
+                    onChange={handleChange}
+                    placeholder="XX/XXXXX"
+                    className={inputClass}
+                  />
+                </div>
               </div>
 
-              {isEditingMessage ? (
-                <textarea
-                  name="user_message"
-                  value={userData.user_message || ""}
-                  onChange={(e) =>
-                    setUserData((prevData) => ({
-                      ...prevData,
-                      [e.target.name]: e.target.value,
-                    }))
-                  }
-                  className="w-full h-[250px] max-h-[250px] p-4 border border-gray-300 rounded-md resize-none text-[#232323] text-[15px] bg-white overflow-y-auto"
-                  placeholder="Escreva sua mensagem de cobrança aqui..."
-                />
-              ) : (
-                <div className="border border-gray-300 p-4 rounded-md text-[#232323] text-[15px]  h-[250px] bg-white">
-                  {userData.user_message || (
-                    <span className="text-gray-400">
-                      Escreva sua mensagem de cobrança aqui...
-                    </span>
-                  )}
+              <div className="min-w-0 space-y-6">
+                <h2 className="text-lg md:text-[25px] font-medium font-['Ubuntu'] text-primaria">
+                  Dados para recibo
+                </h2>
+
+                <div>
+                  <label className={labelClass}>Nome/Clínica</label>
+                  <input
+                    type="text"
+                    name="clinic_name"
+                    maxLength={255}
+                    value={draft.clinic_name || ""}
+                    onChange={handleChange}
+                    placeholder="Nome/Clínica"
+                    className={inputClass}
+                  />
                 </div>
-              )}
+
+                <div className="sm:w-1/2 sm:pr-2">
+                  <label className={labelClass}>CPF/CNPJ</label>
+                  <input
+                    type="text"
+                    value={draft.user_document || ""}
+                    disabled
+                    className={`${inputClass} cursor-not-allowed opacity-60`}
+                  />
+                  <p className="ml-2 mt-1 text-xs text-texto3">
+                    O recibo usa o mesmo CPF/CNPJ de "Meus dados".
+                  </p>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Importar logotipo</label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex h-[50px] min-w-0 flex-1 items-center rounded-[15px] border-2 border-cinza6 bg-neutral-100 px-[16px] sm:max-w-[260px]">
+                      <span className="truncate text-sm font-normal font-['Open Sans'] text-texto2/70">
+                        {fileName}
+                      </span>
+                    </div>
+                    <label className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-primaria hover:bg-clara3">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        className="h-5 w-5"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 12l-4-4m0 0l-4 4m4-4v12"
+                        />
+                      </svg>
+                      <span className="underline">Importar arquivo</span>
+                      <input
+                        type="file"
+                        name="image"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-end gap-3">
+              <button
+                onClick={closeEdit}
+                className="h-[39px] w-[108px] rounded-[100px] border border-primaria text-primaria hover:bg-clara4"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSave}
+                className="h-[40px] w-[90px] rounded-[100px] bg-primaria text-white hover:opacity-90"
+              >
+                Salvar
+              </button>
             </div>
           </div>
         </div>
-
-        {isEditing && (
-          <div className="fixed inset-0 backdrop-blur-[6px] bg-[#33B8D14D] bg-opacity-30 overflow-y-auto py-10 flex justify-center items-center z-30">
-            <div className="w-[90%] md:mt-0 mt-28 md:max-w-[1076px] max-h-[90%] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] shadow-lg p-6 md:p-8 overflow-y-auto">
-              <div className="flex flex-col md:flex-row gap-6 md:ml-9">
-                <div className="space-y-6 mr-0 md:mr-20">
-                  <h2 className="text-lg md:text-[25px] font-medium text-[#0082ba] font-['Ubuntu']">
-                    Editar meus dados
-                  </h2>
-
-                  <div>
-                    <label className="block text-sm md:text-base font-normal font-['Open Sans'] text-[#232323] tracking-wide mb-1">
-                      Nome
-                    </label>
-                    <input
-                      type="text"
-                      name="user_name"
-                      value={userData.user_name || ""}
-                      onChange={handleChange}
-                      placeholder="Nome do psicólogo"
-                      className="w-full md:w-[418px] h-[50px] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] px-[16px] text-[#5c5c5c]/50 text-sm font-normal font-['Open Sans'] focus:outline-none focus:ring"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm md:text-base font-normal font-['Open Sans'] text-[#232323] tracking-wide mb-1">
-                      E-mail
-                    </label>
-                    <input
-                      type="email"
-                      name="user_email"
-                      value={userData.user_email || ""}
-                      onChange={handleChange}
-                      placeholder="e-mail.psicologo@gmail.com"
-                      className="w-full md:w-[418px] h-[50px] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] px-[16px] text-[#5c5c5c]/50 text-sm font-normal font-['Open Sans'] focus:outline-none focus:ring"
-                    />
-                  </div>
-
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div>
-                      <label className="block text-sm md:text-base font-normal font-['Open Sans'] text-[#232323] tracking-wide mb-1">
-                        Telefone
-                      </label>
-                      <input
-                        type="text"
-                        name="user_phone"
-                        value={userData.user_phone || ""}
-                        onChange={handleChange}
-                        placeholder="(00) 0 0000-0000"
-                        className="w-full md:w-[181px] h-[50px] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] px-[16px] text-[#5c5c5c]/50 text-sm font-normal font-['Open Sans'] focus:outline-none focus:ring"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm md:text-base font-normal font-['Open Sans'] text-[#232323] tracking-wide mb-1">
-                        CPF/CNPJ
-                      </label>
-                      <input
-                        type="text"
-                        name="user_cpf"
-                        value={userData.user_cpf || ""}
-                        onChange={handleChange}
-                        placeholder="XX.XXX.XXX/0001-XX"
-                        className="w-full md:w-[212px] h-[50px] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] px-[16px] text-[#5c5c5c]/50 text-sm font-normal font-['Open Sans'] focus:outline-none focus:ring"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm md:text-base font-normal font-['Open Sans'] text-[#232323] tracking-wide mb-1">
-                      CRP
-                    </label>
-                    <input
-                      type="text"
-                      name="crp_number"
-                      value={userData.crp_number || ""}
-                      onChange={handleChange}
-                      placeholder="XX/XXXXX"
-                      className="w-full md:w-[181px] h-[50px] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] px-[16px] text-[#5c5c5c]/50 text-sm font-normal font-['Open Sans'] focus:outline-none focus:ring"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <h2 className="text-lg md:text-[25px] font-medium text-[#0082ba] font-['Ubuntu']">
-                    Dados para recibo
-                  </h2>
-
-                  <div>
-                    <label className="block text-sm md:text-base font-normal font-['Open Sans'] text-[#232323] tracking-wide mb-1">
-                      Nome/Clínica
-                    </label>
-                    <input
-                      type="text"
-                      id="clinic_name"
-                      value={userData.clinic_name || ""}
-                      onChange={(e) =>
-                        setUserData({ ...userData, clinic_name: e.target.value })
-                      }
-                      placeholder="Nome/Clínica"
-                      className="w-full md:w-[418px] h-[50px] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] px-[16px] text-[#5c5c5c]/50 text-sm font-normal font-['Open Sans'] focus:outline-none focus:ring"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm md:text-base font-normal font-['Open Sans'] text-[#232323] tracking-wide mb-1">
-                      CPF/CNPJ
-                    </label>
-                    <input
-                      type="text"
-                      name="clinic_cpf_cnpj"
-                      value={userData.clinic_cpf_cnpj || ""}
-                      onChange={handleChange}
-                      placeholder="XX.XXX.XXX/0001-XX"
-                      className="w-full md:w-[212px] h-[50px] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] px-[16px] text-[#5c5c5c]/50 text-sm font-normal font-['Open Sans'] focus:outline-none focus:ring"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm md:text-base font-normal font-['Open Sans'] text-[#232323] tracking-wide mb-1">
-                      Importar logotipo
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <div className="w-full md:w-[212px] h-[50px] bg-neutral-100 rounded-[15px] border-2 border-[#81a0ae] px-[16px] flex items-center">
-                        <span className="text-[#5c5c5c]/50 text-sm font-normal font-['Open Sans']">
-                          {fileName}
-                        </span>
-                      </div>
-                      <label className="flex items-center gap-1 text-[#0082ba] cursor-pointer">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          className="w-5 h-5"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 12l-4-4m0 0l-4 4m4-4v12"
-                          />
-                        </svg>
-                        <span className="underline">Importar arquivo</span>
-                        <input
-                          type="file"
-                          name="image"
-                          onChange={handleFileChange}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 mt-6">
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="px-4 py-2 border w-[108px] h-[39px] border-primaria text-primaria rounded-[100px]"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="px-4 py-2 w-[90px] h-[40px] bg-primaria text-white rounded-[100px]"
-                >
-                  Salvar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-
-      </>
-    </div >
+      )}
+    </div>
   );
 };
 
