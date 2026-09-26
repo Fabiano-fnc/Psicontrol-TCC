@@ -18,9 +18,24 @@ exports.upsertCustomer = async (userId, customerData) => {
   } = customerData;
 
   if (!customer_name || !customer_cpf_cnpj) {
-    return res
-      .status(400)
-      .json({ error: "customer_name e customer_cpf_cnpj são obrigatórios." });
+    return {
+      status: 400,
+      error: "Nome e CPF/CNPJ do paciente são obrigatórios.",
+    };
+  }
+
+  const documentPattern = /^(\d{11}|\d{14})$/;
+  if (!documentPattern.test(customer_cpf_cnpj)) {
+    return { status: 400, error: "CPF deve ter 11 dígitos e CNPJ 14." };
+  }
+  if (alternative_cpf_cnpj && !documentPattern.test(alternative_cpf_cnpj)) {
+    return {
+      status: 400,
+      error: "CPF/CNPJ do recibo deve ter 11 ou 14 dígitos.",
+    };
+  }
+  if (customer_phone && !/^\d{10,15}$/.test(customer_phone)) {
+    return { status: 400, error: "Telefone deve ter entre 10 e 15 dígitos." };
   }
 
   const validPatientStatus =
@@ -37,7 +52,7 @@ exports.upsertCustomer = async (userId, customerData) => {
       where: { customer_id, user_id: userId },
     });
     if (!customer) {
-      return res.status(401).json({ error: "Usuário não autenticado." });
+      return { status: 404, error: "Paciente não encontrado." };
     }
 
     await customer.update({
@@ -90,20 +105,31 @@ exports.upsertCustomer = async (userId, customerData) => {
   }
 };
 
-exports.createCustomer = async (req, res) => {
-  const user = req.user;
-  const newCustomer = await this.upsertCustomer(user.user_id, req.body);
-  res.status(201).json(newCustomer);
+const respondUpsert = async (res, successStatus, upsert) => {
+  try {
+    const result = await upsert();
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+    res.status(successStatus).json(result);
+  } catch (error) {
+    console.error("Erro ao salvar paciente:", error);
+    res.status(500).json({ error: "Erro ao salvar paciente." });
+  }
 };
 
-exports.editCustomer = async (req, res) => {
-  const user = req.user;
-  const updateCustomer = await this.upsertCustomer(user.user_id, {
-    customer_id: req.params.customerId,
-    ...req.body,
-  });
-  res.status(200).json(updateCustomer);
-};
+exports.createCustomer = (req, res) =>
+  respondUpsert(res, 201, () =>
+    this.upsertCustomer(req.user.user_id, req.body)
+  );
+
+exports.editCustomer = (req, res) =>
+  respondUpsert(res, 200, () =>
+    this.upsertCustomer(req.user.user_id, {
+      ...req.body,
+      customer_id: req.params.customerId,
+    })
+  );
 
 exports.getCustomers = async (req, res) => {
   const userId = req.user.user_id;
