@@ -35,7 +35,7 @@ const EDITABLE_FIELDS = [
 const FIELD_RULES = {
   user_cpf: { pattern: /^\d{11}$/, message: "CPF deve ter 11 dígitos." },
   user_cnpj: { pattern: /^\d{14}$/, message: "CNPJ deve ter 14 dígitos." },
-  crp_number: { maxLength: 15, message: "CRP deve ter no máximo 15 caracteres." },
+  crp_number: { pattern: /^\d{2}\/\d{4,6}$/, message: "CRP deve estar no formato XX/XXXXX." },
   user_phone: { pattern: /^\d{10,15}$/, message: "Telefone deve ter entre 10 e 15 dígitos." },
   clinic_name: { maxLength: 255, message: "Nome/Clínica deve ter no máximo 255 caracteres." },
 };
