@@ -1,11 +1,9 @@
 import { notify } from "../../utils/notification/notify";
 import { formatBRL } from "../../utils/format/format";
 import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
-import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import "../../index.css";
 import DeletePatientModal from "./components/DeletePatientModal";
-import { fetchCustomers } from "../../service/pagesService/pagesService";
 import DropDownDashBoard from "./components/DropDownDashBoard";
 import SearchBarDashBoard from "./components/SearchBarDashBoard";
 import { HamburguerIcon } from "../../icons/icons";
@@ -37,10 +35,6 @@ const StatusBadge = ({ tone, children }) => (
 );
 
 const DashBoard = () => {
-  const [customersData, setCustomersData] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [calendars, setCalendars] = useState([]);
-  const [selectedCalendarId, setSelectedCalendarId] = useState("");
   const [patients, setPatients] = useState([]);
   const [totalConsultations, setTotalConsultations] = useState(0);
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -61,23 +55,16 @@ const DashBoard = () => {
   const [isSearchBarOpen, setIsSearchBarOpen] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
   const [isPartialPaymentModalOpen, setIsPartialPaymentModalOpen] =
     useState(false);
   const [
     selectedPatientForPartialPayment,
     setSelectedPatientForPartialPayment,
   ] = useState(null);
-  const calendarIdsParam = searchParams.get("calendarIds");
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  const selectedCalendarIds = useMemo(
-    () => (calendarIdsParam ? calendarIdsParam.split(",") : []),
-    [calendarIdsParam]
-  );
 
-  const dropdownRef = useRef();
   const [menuPosition, setMenuPosition] = useState(null);
   const closeConfirmModal = () => setIsConfirmModalOpen(false);
   useEscapeKey(isConfirmModalOpen, closeConfirmModal);
@@ -115,65 +102,6 @@ const DashBoard = () => {
     };
   }, [isDropdownOpenPatients, isDropdownOpen]);
 
-  useEffect(() => {
-    const fetchCalendars = async () => {
-      setLoading(true);
-      const response = await fetch(
-        `${process.env.REACT_APP_API_URL}/events/calendars`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
-          },
-        }
-      );
-      if (response.ok) {
-        const data = await response.json();
-        const filteredCalendars = data.filter((calendar) =>
-          selectedCalendarIds.includes(calendar.id)
-        );
-        setCalendars(filteredCalendars);
-        if (filteredCalendars.length > 0 && !selectedCalendarId) {
-          setSelectedCalendarId(filteredCalendars[0].id);
-        }
-      } else {
-        setError("Erro ao buscar calendários");
-      }
-      setLoading(false);
-    };
-    fetchCalendars();
-  }, [selectedCalendarIds, selectedCalendarId]);
-
-  const fetchEvents = async () => {
-    if (selectedCalendarId === "") return;
-
-    setLoading(true);
-    const response = await fetch(
-      `${process.env.REACT_APP_API_URL}/events/get-events/${selectedCalendarId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
-        },
-      }
-    );
-    const contentType = response.headers.get("content-type");
-
-    if (contentType && contentType.includes("application/json")) {
-      const data = await response.json();
-      if (Array.isArray(data)) {
-        const sortedEvents = data.sort(
-          (a, b) => new Date(b.date) - new Date(a.date)
-        );
-        setEvents(sortedEvents);
-      }
-    } else {
-      setError("Erro ao buscar eventos");
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchEvents();
-  }, [selectedCalendarId]);
 
   const fetchUnmatchedPatients = async () => {
     const response = await fetch(
@@ -197,20 +125,6 @@ const DashBoard = () => {
     fetchUnmatchedPatients();
   }, []);
 
-  const fetchPatientData = async () => {
-    setLoading(true);
-    const data = await fetchCustomers();
-    setCustomersData(
-      (data.customers || []).filter((customer) => customer.customer_name)
-    );
-    setTotalConsultations(data.totalConsultations || 0);
-    setTotalRevenue(parseFloat(data.totalRevenue || 0));
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchPatientData();
-  }, []);
 
   const handleLinkPatient = async (customer_id) => {
     if (selectedEvent === null || selectedEvent === undefined) {
@@ -290,9 +204,6 @@ const DashBoard = () => {
     const event = unmatchedPatients[selectedEvent];
     if (!event) {
       return null;
-    }
-    if (!patients || patients.length === 0) {
-      await fetchPatientData();
     }
     openSearchBar();
   };
@@ -393,9 +304,6 @@ const DashBoard = () => {
     fetchBillingRecords(selectedMonth, selectedYear);
   }, [selectedMonth, selectedYear]);
 
-  const openBillingModal = () => {
-    setIsBillingModalOpen(true);
-  };
 
   const closeBillingModal = () => {
     setIsBillingModalOpen(false);

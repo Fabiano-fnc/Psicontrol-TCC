@@ -3,7 +3,6 @@ import { registerLocale } from "react-datepicker";
 import {
   formatDateBrazilian,
   parseISODate,
-  formatDateIso,
   isValidDate,
 } from "../../../utils/DateOfBirth/dateOfBirth";
 import { ptBR } from "date-fns/locale";
@@ -184,10 +183,6 @@ const CreateCustomerForm = ({
       return;
     }
 
-    const formattedCustomer = {
-      ...customer,
-      customer_dob: startDate ? formatDateIso(startDate) : "",
-    };
 
     try {
       const payload = { ...customer };

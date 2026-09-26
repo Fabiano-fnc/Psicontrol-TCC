@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { GoogleIcon } from "./components/LoginIcons";
 import PsiText from "./images/PsiText.png";
 import BoxBlue from "./images/BoxBlue.png";
@@ -7,6 +7,10 @@ import BoxBlueCourt from "./images/BoxBlueCourt.png";
 const Login = () => {
   const sessionExpired =
     new URLSearchParams(window.location.search).get("sessao") === "expirada";
+
+  useEffect(() => {
+    document.title = "Entrar · Psicontrol";
+  }, []);
 
   const handleLogin = async () => {
     try {

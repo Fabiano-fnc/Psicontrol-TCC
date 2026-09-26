@@ -47,7 +47,6 @@ const CustomersPage = () => {
 
   const dropdownRef = useRef();
   const searchDropRef = useRef();
-  const inputRef = useRef();
   const navigate = useNavigate();
 
   useOutsideClick(searchDropRef, () => setFilteredCustomers([]));

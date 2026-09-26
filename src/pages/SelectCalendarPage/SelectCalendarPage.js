@@ -55,6 +55,7 @@ const SelectCalendarPage = () => {
   };
 
   useEffect(() => {
+    document.title = "Escolher agenda · Psicontrol";
     fetchCalendars();
   }, []);
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import "../../../index.css";
 import BaseIcon from "./images/BaseIcon.png";
@@ -83,6 +83,23 @@ const TopBar = ({ onMenuClick }) => {
   
 
   const pageInfo = getPageTitle();
+
+  useEffect(() => {
+    const titles = {
+      "/create-event-form": "Página Inicial",
+      "/customers": "Pacientes",
+      "/income": "Receitas e Despesas",
+      "/user": "Minhas Configurações",
+      "/archived": "Pacientes Arquivados",
+      "/create-customer": "Novo Paciente",
+    };
+    const title =
+      titles[location.pathname] ||
+      (location.pathname.startsWith("/customers/")
+        ? "Perfil do Paciente"
+        : "Página Não Encontrada");
+    document.title = `${title} · Psicontrol`;
+  }, [location.pathname]);
 
   return (
     <div className="fixed top-0 left-0 right-0 md:left-[265px] z-30 flex items-center justify-between gap-3 border-b border-cinza9 bg-bg1/95 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur md:px-8 md:py-5">

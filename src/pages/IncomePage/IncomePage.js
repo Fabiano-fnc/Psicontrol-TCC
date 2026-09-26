@@ -32,10 +32,8 @@ const IncomePage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [itemType, setItemType] = useState("");
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isAddingRevenue, setIsAddingRevenue] = useState([]);
   const [isAddingExpense, setIsAddingExpense] = useState([]);
-  const [isExpenseButtonClicked, setIsExpenseButtonClicked] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState(null);
   const revenueNameInputRef = useRef(null); // Ref para o input de nome da próxima receita
   const revenueValueInputRef = useRef(null); // Ref para o input de valor da receita atual
@@ -170,8 +168,6 @@ const IncomePage = () => {
 
       if (response.ok) {
         setRevenues(revenues.filter((revenue) => revenue.id !== id));
-        const data = await response.json();
-      } else {
       }
     } catch (error) {}
   }
@@ -193,8 +189,6 @@ const IncomePage = () => {
 
       if (response.ok) {
         setExpenses(expenses.filter((expense) => expense.id !== id));
-        const data = await response.json();
-      } else {
       }
     } catch (error) {}
   }
@@ -223,7 +217,6 @@ const IncomePage = () => {
     handleDelete(itemToDelete, itemType);
     closeModal();
     showDeleteToast();
-    setIsSuccessModalOpen(true);
   };
 
   const handleClick = async () => {
@@ -296,7 +289,6 @@ const IncomePage = () => {
 
   const loadExpenses = async (month, year) => {
     const monthYear = `${month}/${year.slice(-2)}`;
-    console.log(`Chamando API: /income/expense?monthYear=${monthYear}`);
 
     try {
       const response = await fetch(
@@ -313,7 +305,6 @@ const IncomePage = () => {
       if (response.ok) {
         const expenseData = await response.json();
         setExpenses(expenseData);
-        console.log("Despesas carregadas:", expenseData);
       }
     } catch (error) {
       console.error("Erro ao carregar despesas:", error);
@@ -322,7 +313,6 @@ const IncomePage = () => {
 
   const loadRevenues = async (month, year) => {
     const monthYear = `${month}/${year.slice(-2)}`;
-    console.log(`Chamando API: /income/revenue?monthYear=${monthYear}`);
 
     try {
       const response = await fetch(
@@ -339,7 +329,6 @@ const IncomePage = () => {
       if (response.ok) {
         const revenueData = await response.json();
         setRevenues(revenueData);
-        console.log("Receitas carregadas:", revenueData);
       }
     } catch (error) {
       console.error("Erro ao carregar receitas:", error);
@@ -360,13 +349,11 @@ const IncomePage = () => {
 
   const handleMonthChange = (month) => {
     const formattedMonth = String(month).padStart(2, "0");
-    console.log("Mês selecionado:", formattedMonth);
     setSelectedMonth(formattedMonth);
   };
 
   const handleYearChange = (year) => {
     const formattedYear = String(year);
-    console.log("Ano selecionado:", formattedYear);
     setSelectedYear(formattedYear);
   };
 
@@ -392,7 +379,6 @@ const IncomePage = () => {
 
   const toggleAddExpense = () => {
     setIsAddingExpense((prev) => [...prev, { name: "", value: "" }]);
-    setIsExpenseButtonClicked((prev) => !prev);
   };
 
   const updateAddingRevenue = (index, field, value) => {
