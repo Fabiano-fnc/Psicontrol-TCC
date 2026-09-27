@@ -568,22 +568,23 @@ const DashBoard = () => {
             <CardDashBoard
               title="Nº de Consultas"
               value={totalConsultations}
-              
+              icon="consultas"
             />
             <CardDashBoard
               title="Receita Total"
               value={formatBRL(totalRevenue)}
-              
+              icon="receita"
             />
             <CardDashBoard
               title="Receita líquida"
               value={formatBRL(netRevenue)}
-              
+              icon="liquida"
+              destaque
             />
             <CardDashBoard
               title="Hora líquida"
               value={formatBRL(netTime)}
-              
+              icon="hora"
             />
           </div>
 

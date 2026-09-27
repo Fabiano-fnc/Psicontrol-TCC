@@ -46,7 +46,9 @@ const Layout = () => {
 
       <div className="main-content flex flex-col flex-1 min-w-0 h-full bg-clara4">
         <main className="flex-1 overflow-auto overflow-x-hidden">
-          <Outlet />
+          <div key={location.pathname} className="motion-safe:animate-page-in">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

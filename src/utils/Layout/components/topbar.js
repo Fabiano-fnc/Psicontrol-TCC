@@ -1,10 +1,25 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import "../../../index.css";
 import BaseIcon from "./images/BaseIcon.png";
+import { saudacao } from "../../greeting";
 
 const TopBar = ({ onMenuClick }) => {
   const location = useLocation();
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    fetch(`${process.env.REACT_APP_API_URL}/user/users`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
+      },
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then(setUser)
+      .catch(() => setUser(null));
+  }, []);
+
+  const firstName = user?.user_name?.trim().split(" ")[0];
 
   const getPageTitle = () => {
     switch (location.pathname) {
@@ -102,16 +117,16 @@ const TopBar = ({ onMenuClick }) => {
   }, [location.pathname]);
 
   return (
-    <div className="fixed top-0 left-0 right-0 md:left-[265px] z-30 flex items-center justify-between gap-3 border-b border-cinza9 bg-bg1/95 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur md:px-8 md:py-5">
+    <div className="fixed top-0 left-0 right-0 md:left-[265px] z-30 flex items-center justify-between gap-3 bg-gradient-to-r from-primaria to-primariaEscura px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white shadow-md md:border-b md:border-cinza9 md:bg-none md:bg-bg1/95 md:px-8 md:py-4 md:text-texto1 md:shadow-none md:backdrop-blur">
       {/* Botão hambúrguer visível apenas em telas menores */}
       <button
-        className="md:hidden rounded-full p-1 hover:bg-clara3"
+        className="md:hidden rounded-full p-1 hover:bg-white/10"
         onClick={onMenuClick}
         aria-label="Abrir menu"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-8 w-8 text-primaria"
+          className="h-8 w-8 text-white"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -127,16 +142,39 @@ const TopBar = ({ onMenuClick }) => {
 
       <img
         src={BaseIcon}
-        alt="Base Icon"
-        className="w-[40px] md:hidden"
+        alt=""
+        className="w-[36px] brightness-0 invert md:hidden"
       />
 
       {/* Nome da página */}
-      <h2
-        className={`font-ubuntu text-[15px] font-semibold leading-tight text-texto1 text-right md:mr-auto md:text-left md:text-[24px] ${pageInfo.margin}`}
-      >
-        {pageInfo.title}
-      </h2>
+      <div className="text-right md:mr-auto md:text-left">
+        <p className="hidden text-xs font-semibold uppercase tracking-wider text-texto3 md:block">
+          {saudacao()}
+          {firstName ? `, ${firstName}` : ""}
+        </p>
+        <h2
+          className={`font-ubuntu text-[15px] font-semibold leading-tight md:text-[24px] ${pageInfo.margin}`}
+        >
+          {pageInfo.title}
+        </h2>
+      </div>
+
+      {user && (
+        <span
+          className="hidden h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primaria to-destaque font-ubuntu text-lg font-bold text-white ring-4 ring-clara3 md:flex"
+          title={user.user_name}
+        >
+          {user.photoUrl ? (
+            <img
+              src={user.photoUrl}
+              alt="Foto de perfil"
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            user.user_name?.charAt(0)
+          )}
+        </span>
+      )}
     </div>
   );
 };

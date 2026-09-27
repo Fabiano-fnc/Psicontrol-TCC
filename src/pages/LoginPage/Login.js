@@ -2,13 +2,7 @@ import React, { useEffect, useState } from "react";
 import { GoogleIcon } from "./components/LoginIcons";
 import PsiText from "./images/PsiText.png";
 import { notify } from "../../utils/notification/notify";
-
-const saudacao = () => {
-  const hora = new Date().getHours();
-  if (hora < 12) return "Bom dia";
-  if (hora < 18) return "Boa tarde";
-  return "Boa noite";
-};
+import { saudacao } from "../../utils/greeting";
 
 const recursos = [
   {

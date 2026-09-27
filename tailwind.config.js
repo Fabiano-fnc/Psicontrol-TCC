@@ -58,6 +58,10 @@ module.exports = {
           "33%": { transform: "translate(30px, -40px) scale(1.08)" },
           "66%": { transform: "translate(-20px, 20px) scale(0.95)" },
         },
+        "page-in": {
+          from: { opacity: "0", transform: "translateY(8px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
         "fade-up": {
           from: { opacity: "0", transform: "translateY(16px)" },
           to: { opacity: "1", transform: "translateY(0)" },
@@ -69,6 +73,9 @@ module.exports = {
         "float-slow": "float 8s ease-in-out infinite",
         blob: "blob 18s ease-in-out infinite",
         "fade-up": "fade-up 0.6s ease-out both",
+        // Sem fill-mode: ao terminar não deixa transform, que quebraria
+        // os modais com position: fixed dentro das páginas
+        "page-in": "page-in 0.35s ease-out",
       },
       letterSpacing: {
         normal: "0.25px",
