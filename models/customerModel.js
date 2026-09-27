@@ -53,6 +53,10 @@ const Customer = sequelize.define(
     customer_dob: {
       type: DataTypes.DATEONLY,
       allowNull: true,
+    },
+    calendar_id: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
     }
   },
   {

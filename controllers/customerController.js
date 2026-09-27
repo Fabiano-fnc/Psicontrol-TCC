@@ -1,6 +1,17 @@
-const { Customer, User, Event, CustomersBillingRecords } = require("../models");
+const { Op } = require("sequelize");
+const {
+  Customer,
+  Event,
+  CustomersBillingRecords,
+  Calendar,
+} = require("../models");
 const { formatDateIso, calculateAge } = require("../utils/dateUtils");
 const { updateConsultationDays } = require("../utils/updateConsultationDays");
+
+const findEnabledCalendar = (userId, calendarId) =>
+  Calendar.findOne({
+    where: { user_id: userId, calendar_id: calendarId, enabled: true },
+  });
 
 
 exports.upsertCustomer = async (userId, customerData) => {
@@ -15,6 +26,7 @@ exports.upsertCustomer = async (userId, customerData) => {
     alternative_name,
     alternative_cpf_cnpj,
     customer_dob,
+    calendar_id,
   } = customerData;
 
   if (!customer_name || !customer_cpf_cnpj) {
@@ -47,6 +59,10 @@ exports.upsertCustomer = async (userId, customerData) => {
 
   const formattedCustomerDob = formatDateIso(customer_dob);
 
+  if (!customer_id && !calendar_id) {
+    return { status: 400, error: "Selecione o calendário do paciente." };
+  }
+
   if (customer_id) {
     const customer = await Customer.findOne({
       where: { customer_id, user_id: userId },
@@ -55,7 +71,14 @@ exports.upsertCustomer = async (userId, customerData) => {
       return { status: 404, error: "Paciente não encontrado." };
     }
 
+    const calendarChanged =
+      calendar_id !== undefined && calendar_id !== customer.calendar_id;
+    if (calendarChanged && !(await findEnabledCalendar(userId, calendar_id))) {
+      return { status: 400, error: "Calendário inválido ou desabilitado." };
+    }
+
     await customer.update({
+      ...(calendarChanged && { calendar_id }),
       customer_name,
       customer_cpf_cnpj,
       customer_phone,
@@ -67,26 +90,46 @@ exports.upsertCustomer = async (userId, customerData) => {
       customer_dob: formattedCustomerDob,
     });
 
-    const billingRecord = await CustomersBillingRecords.findOne({
-      where: { customer_id: customer.customer_id },
-    });
+    // Novo valor vale do mês atual em diante; meses anteriores mantêm o
+    // valor com que foram faturados
+    const now = new Date();
+    const currentMonth = `${now.getFullYear()}-${String(
+      now.getMonth() + 1
+    ).padStart(2, "0")}`;
+    await CustomersBillingRecords.update(
+      { consultation_fee: parseFloat(consultation_fee) || 0.0 },
+      {
+        where: {
+          customer_id: customer.customer_id,
+          month_and_year: { [Op.gte]: currentMonth },
+        },
+      }
+    );
 
-    if (billingRecord) {
-      await billingRecord.update({
-        consultation_fee: parseFloat(consultation_fee) || 0.0,
-      });
-    } else {
-      await CustomersBillingRecords.create({
-        customer_id: customer.customer_id,
-        month_and_year: null,
-        consultation_fee: parseFloat(consultation_fee) || 0.0,
-      });
+    if (calendarChanged) {
+      // Consultas de outro calendário deixam de pertencer ao paciente e
+      // voltam para a lista de não vinculados
+      await Event.update(
+        { customer_id: null },
+        {
+          where: {
+            customer_id: customer.customer_id,
+            calendar_id: { [Op.ne]: calendar_id },
+          },
+        }
+      );
+      await updateConsultationDays(customer.customer_id);
     }
 
     const age = calculateAge(formattedCustomerDob);
     return { customer, age };
   } else {
+    if (!(await findEnabledCalendar(userId, calendar_id))) {
+      return { status: 400, error: "Calendário inválido ou desabilitado." };
+    }
+
     const newCustomer = await Customer.create({
+      calendar_id,
       user_id: userId,
       customer_name,
       customer_cpf_cnpj,
@@ -218,6 +261,12 @@ exports.deleteCustomer = async (req, res, next) => {
       .json({ error: "Cliente não encontrado ou não autorizado." });
   }
 
+  // Consultas voltam para "não vinculados"; o faturamento do paciente sai junto
+  await Event.update(
+    { customer_id: null },
+    { where: { customer_id: customerId, user_id: userId } }
+  );
+  await CustomersBillingRecords.destroy({ where: { customer_id: customerId } });
   await Customer.destroy({ where: { customer_id: customerId } });
 
   res.status(200).json({ message: "Cliente deletado com sucesso." });
@@ -268,6 +317,20 @@ exports.linkCustomerToEvent = async (req, res) => {
 
     if (!event) {
       return res.status(404).json({ error: "Evento não encontrado." });
+    }
+
+    const customer = await Customer.findOne({
+      where: { customer_id, user_id: userId },
+    });
+
+    if (!customer) {
+      return res.status(404).json({ error: "Paciente não encontrado." });
+    }
+
+    if (customer.calendar_id && customer.calendar_id !== event.calendar_id) {
+      return res.status(400).json({
+        error: "Este paciente pertence a outro calendário.",
+      });
     }
 
     // 1. Vincula o paciente ao evento

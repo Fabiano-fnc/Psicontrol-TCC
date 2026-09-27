@@ -1,5 +1,6 @@
 const { Event } = require("../models/eventModel");
 const { CustomersBillingRecords } = require("../models");
+const { updateConsultationDays } = require("../utils/updateConsultationDays");
 
 const updateBillingFromEvent = async (event) => {
   if (!event.customer_id || !event.date) return;
@@ -61,11 +62,16 @@ exports.deleteEventById = async (customers_id) => {
 
 exports.cancelEventByGoogleId = async (googleEventId) => {
   try {
-    const result = await Event.update(
-      { status: "cancelado" },
-      { where: { google_event_id: googleEventId } }
-    );
-  } catch (error) {}
+    const events = await Event.findAll({
+      where: { google_event_id: googleEventId },
+    });
+    for (const event of events) {
+      await event.update({ status: "cancelado" });
+      if (event.customer_id) await updateConsultationDays(event.customer_id);
+    }
+  } catch (error) {
+    console.error("Erro ao cancelar evento:", error);
+  }
 };
 
 exports.saveEvent = async (eventData) => {

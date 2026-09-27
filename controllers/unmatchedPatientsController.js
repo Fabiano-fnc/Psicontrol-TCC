@@ -1,4 +1,5 @@
-const { Customer,Event, Calendar } = require("../models");
+const { Op } = require("sequelize");
+const { Event, Calendar } = require("../models");
 
 exports.getUnmatchedPatients = async (req, res, next) => {
 
@@ -24,6 +25,8 @@ exports.getUnmatchedPatients = async (req, res, next) => {
       user_id: req.user.user_id,
       customer_id: null,
       calendar_id: calendarIds,
+      // Eventos apagados/cancelados no Google não aparecem mais na lista
+      status: { [Op.or]: [{ [Op.notIn]: ["cancelado", "cancelled"] }, null] },
     },
     attributes: ['customers_id', 'event_name', 'date', 'google_event_id', 'calendar_id'],
   });

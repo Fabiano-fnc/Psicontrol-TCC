@@ -1,4 +1,9 @@
-const { Customer, CustomersBillingRecords, income } = require("../models");
+const {
+  Customer,
+  CustomersBillingRecords,
+  income,
+  Calendar,
+} = require("../models");
 const { Op } = require("sequelize");
 
 exports.updatePartialPayment = async (req, res) => {
@@ -114,6 +119,13 @@ exports.getBillingRecordsByMonthAndYear = async (req, res) => {
       .json({ error: "Os campos 'month' e 'year' são obrigatórios." });
   }
 
+  // Só entram pacientes dos calendários habilitados no momento
+  const enabledCalendars = await Calendar.findAll({
+    where: { user_id: userId, enabled: true },
+    attributes: ["calendar_id"],
+  });
+  const enabledCalendarIds = enabledCalendars.map((cal) => cal.calendar_id);
+
   const billingRecords = await CustomersBillingRecords.findAll({
     where: {
       month_and_year: { [Op.like]: `${year}-${month.padStart(2, "0")}%` },
@@ -121,25 +133,11 @@ exports.getBillingRecordsByMonthAndYear = async (req, res) => {
     include: [
       {
         model: Customer,
-        where: { user_id: userId },
-        attributes: ["customer_name", "customer_id"],
+        where: { user_id: userId, calendar_id: enabledCalendarIds },
+        attributes: ["customer_name", "customer_id", "calendar_id"],
       },
     ],
   });
-
-  if (!billingRecords.length) {
-    return res.status(200).json({
-      message:
-        "Não há consultas faturadas para este mês. Eventos não vinculados ou não confirmados não entram no faturamento.",
-      records: [],
-      totals: {
-        totalConsultations: 0,
-        totalRevenue: "0.00",
-        netRevenue: "0.00",
-        netTime: "0.00",
-      },
-    });
-  }
 
   const totalConsultations = billingRecords.reduce((acc, record) => {
     const daysArray = record.consultation_days
@@ -185,7 +183,9 @@ exports.getBillingRecordsByMonthAndYear = async (req, res) => {
   );
   const netRevenue =
     totalRevenue + totalRevenueFromIncome - totalExpenseFromIncome;
-  const netTime = (netRevenue / totalConsultations).toFixed(2);
+  const netTime = totalConsultations
+    ? (netRevenue / totalConsultations).toFixed(2)
+    : "0.00";
 
   const formattedRecords = billingRecords.map((record) => {
     const daysArray = record.consultation_days

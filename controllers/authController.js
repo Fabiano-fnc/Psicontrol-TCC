@@ -1,6 +1,7 @@
 const { google } = require("googleapis");
 const { User, Calendar, Event, Customer } = require("../models");
 const Fuse = require("fuse.js");
+const { Op } = require("sequelize");
 const { listCalendars } = require("../services/calendarService");
 const { parseISO, format } = require("date-fns");
 const { oauth2Client, authUrl } = require("../config/oauth2");
@@ -19,20 +20,24 @@ const fetchGoogleCalendars = async (accessToken) => {
   } catch (error) {}
 };
 
+// Período buscado no Google: de 2 meses atrás até 2 meses à frente
+const syncWindow = () => {
+  const timeMin = new Date();
+  const timeMax = new Date();
+  timeMin.setMonth(timeMin.getMonth() - 2);
+  timeMax.setMonth(timeMax.getMonth() + 2);
+  return { timeMin, timeMax };
+};
+
 const fetchGoogleCalendarEvents = async (accessToken, calendarId) => {
   oauth2Client.setCredentials({ access_token: accessToken });
 
-  const now = new Date();
-  const twoMonthsBefore = new Date();
-  const twoMonthsAfter = new Date();
-
-  twoMonthsBefore.setMonth(now.getMonth() - 2);
-  twoMonthsAfter.setMonth(now.getMonth() + 2);
+  const { timeMin, timeMax } = syncWindow();
 
   const response = await calendar.events.list({
     calendarId: calendarId,
-    timeMin: twoMonthsBefore.toISOString(),
-    timeMax: twoMonthsAfter.toISOString(),
+    timeMin: timeMin.toISOString(),
+    timeMax: timeMax.toISOString(),
     singleEvents: true,
     orderBy: "startTime",
   });
@@ -48,7 +53,14 @@ const fetchGoogleCalendarEvents = async (accessToken, calendarId) => {
   }));
 };
 
+// Usuários com sincronização em andamento: evita dois ciclos simultâneos
+// (cron, login e sync manual) criando o mesmo evento em duplicidade
+const syncingUsers = new Set();
+
 const syncGoogleCalendarWithDatabase = async (userId, accessToken) => {
+  if (syncingUsers.has(userId)) return;
+  syncingUsers.add(userId);
+
   try {
     if (!userId || !accessToken) {
       throw new Error("userId ou accessToken ausente na sincronização");
@@ -56,15 +68,14 @@ const syncGoogleCalendarWithDatabase = async (userId, accessToken) => {
 
     oauth2Client.setCredentials({ access_token: accessToken });
     const calendars = await fetchGoogleCalendars(accessToken);
+    if (!calendars) return;
 
     for (const calendar of calendars) {
       const calendarId = calendar.id;
 
       const dbCalendar = await Calendar.findOne({
-        where: { calendar_id: calendarId },
+        where: { calendar_id: calendarId, user_id: userId },
       });
-
-      const user = await User.findOne({ where: { access_token: accessToken } });
 
       if (!dbCalendar) {
         await Calendar.create({
@@ -73,18 +84,30 @@ const syncGoogleCalendarWithDatabase = async (userId, accessToken) => {
           user_id: userId,
           enabled: false,
         });
+        continue;
       }
 
+      if (calendar.summary && dbCalendar.calendar_name !== calendar.summary) {
+        await dbCalendar.update({ calendar_name: calendar.summary });
+      }
+
+      // Só importa eventos dos calendários que o usuário escolheu
+      if (!dbCalendar.enabled) continue;
+
       const events = await fetchGoogleCalendarEvents(accessToken, calendarId);
-      const patients = await Customer.findAll();
+
+      // Um evento só pode ser ligado a pacientes deste usuário e deste calendário
+      const patients = await Customer.findAll({
+        where: { user_id: userId, calendar_id: calendarId },
+      });
 
       const fuse = new Fuse(patients, {
         keys: ["customer_name"],
         threshold: 0.3,
       });
 
-      const unmatchedEvents = [];
       const processedEvents = new Set();
+      const affectedCustomers = new Set();
 
       for (const event of events) {
         const summary = event.summary?.trim() || "Evento Sem Título";
@@ -98,25 +121,17 @@ const syncGoogleCalendarWithDatabase = async (userId, accessToken) => {
         processedEvents.add(uniqueKey);
 
         const eventExists = await Event.findOne({
-          where: { google_event_id: event.id },
+          where: { google_event_id: event.id, user_id: userId },
         });
 
-        if (!event.summary) {
-          console.warn("Evento sem summary:", event);
+        const cleanedSummary = summary.replace(/^Paciente\s*-\s*/, "");
+
+        // Vínculo feito à mão (ou em sincronização anterior) tem prioridade
+        let customerId = eventExists?.customer_id || null;
+        if (!customerId) {
+          const result = fuse.search(cleanedSummary);
+          customerId = result.length > 0 ? result[0].item.customer_id : null;
         }
-
-        const cleanedSummary = summary.replace(/^Paciente\s*-\s*/, '');
-
-        const result = fuse.search(cleanedSummary);
-        const bestMatch = result.length > 0 ? result[0].item : null;
-        const customerId = bestMatch ? bestMatch.customer_id : null;
-
-        console.log("EVENT SUMMARY:", summary);
-        console.log("CLEANED SUMMARY:", cleanedSummary);
-        console.log("FUSE RESULT:", result);
-        console.log("CUSTOMER ID:", customerId);
-
-        
 
         let startDate = null,
           startTime = null,
@@ -124,11 +139,10 @@ const syncGoogleCalendarWithDatabase = async (userId, accessToken) => {
 
         if (event.start && event.start.dateTime) {
           const dateTime = event.start.dateTime;
-          if (dateTime) {
-            startDate = format(parseISO(dateTime), "yyyy-MM-dd");
-            startTime = dateTime.split("T")[1].split(":").slice(0, 2).join(":");
+          startDate = format(parseISO(dateTime), "yyyy-MM-dd");
+          startTime = dateTime.split("T")[1].split(":").slice(0, 2).join(":");
 
-            if (event.end && event.end.dateTime) {
+          if (event.end && event.end.dateTime) {
             endTime = event.end.dateTime
               .split("T")[1]
               .split(":")
@@ -137,86 +151,83 @@ const syncGoogleCalendarWithDatabase = async (userId, accessToken) => {
           } else {
             endTime = startTime;
           }
-          }
         } else if (event.start && event.start.date) {
           startDate = event.start.date;
-          startTime = null;
-          endTime = null;
         }
 
-        if (customerId) {
+        const eventData = {
+          event_name: event.summary,
+          date: startDate,
+          status: event.status,
+          calendar_id: calendarId,
+          start_time: startTime,
+          end_time: endTime,
+          user_id: userId,
+          customer_id: customerId,
+        };
+
         if (eventExists) {
-          await Event.update(
-            {
-                event_name: event.summary,
-              date: startDate,
-              status: event.status,
-              calendar_id: calendarId,
-              start_time: startTime,
-              end_time: endTime,
-                user_id: user.user_id,
-              customer_id: customerId,
-            },
-            { where: { google_event_id: event.id } }
-          );
+          await eventExists.update(eventData);
         } else {
-          await Event.create({
-              event_name: event.summary,
-            date: startDate,
-            google_event_id: event.id,
-            status: event.status,
-            calendar_id: calendarId,
-            start_time: startTime,
-            end_time: endTime,
-              user_id: user.user_id,
-              customer_id: customerId,
-          });
+          await Event.create({ ...eventData, google_event_id: event.id });
         }
-          await updateConsultationDays(customerId);
-        } else {
-          if (!eventExists) {
-            await Event.create({
-              event_name: event.summary,
-              date: startDate,
-              google_event_id: event.id,
-              status: event.status,
-              calendar_id: calendarId,
-              start_time: startTime,
-              end_time: endTime,
-              user_id: user.user_id,
-              customer_id: customerId,
-            });
-          }
-          unmatchedEvents.push({
-            event_name: event.summary,
-            date: startDate,
-            user_id: user.user_id,
-          });
-        }
+
+        if (customerId) affectedCustomers.add(customerId);
       }
 
-      global.unmatchedEventsCache = unmatchedEvents;
+      const cancelledCustomers = await deleteNonexistentGoogleEvents(
+        events,
+        calendarId,
+        userId
+      );
+      cancelledCustomers.forEach((id) => affectedCustomers.add(id));
 
-      await deleteNonexistentGoogleEvents(events, calendarId);
+      for (const customerId of affectedCustomers) {
+        await updateConsultationDays(customerId);
+      }
     }
   } catch (error) {
     console.error(error);
+  } finally {
+    syncingUsers.delete(userId);
   }
 };
 
-const deleteNonexistentGoogleEvents = async (events, calendarId) => {
+// Marca como canceladas as consultas que sumiram do Google e devolve
+// os pacientes afetados, para recalcular o faturamento deles.
+const deleteNonexistentGoogleEvents = async (events, calendarId, userId) => {
+  const affected = new Set();
   try {
-    const googleEventIds = events.map((event) => event.id);
+    const googleEventIds = new Set(events.map((event) => event.id));
+    // Só confere eventos dentro do período buscado; os mais antigos não
+    // vieram do Google e não podem ser considerados apagados
+    const { timeMin, timeMax } = syncWindow();
     const allDbEvents = await Event.findAll({
-      where: { calendar_id: calendarId },
+      where: {
+        calendar_id: calendarId,
+        user_id: userId,
+        date: {
+          [Op.between]: [
+            format(timeMin, "yyyy-MM-dd"),
+            format(timeMax, "yyyy-MM-dd"),
+          ],
+        },
+      },
     });
 
     for (const dbEvent of allDbEvents) {
-      if (!googleEventIds.includes(dbEvent.google_event_id)) {
+      if (
+        !googleEventIds.has(dbEvent.google_event_id) &&
+        dbEvent.status !== "cancelado"
+      ) {
         await dbEvent.update({ status: "cancelado" });
+        if (dbEvent.customer_id) affected.add(dbEvent.customer_id);
       }
     }
-  } catch (error) {}
+  } catch (error) {
+    console.error("Erro ao marcar eventos cancelados:", error);
+  }
+  return affected;
 };
 
 const initiateGoogleAuth = (req, res) => {

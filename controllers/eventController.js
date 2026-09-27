@@ -76,12 +76,9 @@ exports.createEvent = async (req, res) => {
     });
     
     await syncGoogleCalendarWithDatabase(
-      req.user.access_token,
-      event.calendarId
+      req.user.user_id,
+      req.user.access_token
     );
-    
-    res.send("Evento criado com sucesso.");
-    
 
     res.send("Evento criado com sucesso.");
   } catch (error) {
@@ -173,17 +170,18 @@ exports.getEvents = async (req, res) => {
 };
 
 exports.syncCalendar = async (req, res) => {
-  const { calendarId } = req.params;
 
   try {
-    const tokens = oauth2Client.credentials;
-    if (!tokens || !tokens.access_token) {
+    if (!req.user.access_token) {
       return res
         .status(401)
         .send("Token de autenticação não encontrado. Faça login novamente.");
     }
 
-    await syncGoogleCalendarWithDatabase(tokens.access_token, calendarId);
+    await syncGoogleCalendarWithDatabase(
+      req.user.user_id,
+      req.user.access_token
+    );
 
     res.json({ message: "Calendário sincronizado com sucesso." });
   } catch (error) {
@@ -229,6 +227,16 @@ exports.listCalendars = async (req, res) => {
   }));
 
   res.status(200).json(mergedCalendars);
+};
+
+// Calendários do usuário já salvos no banco (sem consultar o Google)
+exports.listSavedCalendars = async (req, res) => {
+  const calendars = await Calendar.findAll({
+    where: { user_id: req.user.user_id },
+    attributes: ["calendar_id", "calendar_name", "enabled"],
+    order: [["calendar_name", "ASC"]],
+  });
+  res.status(200).json(calendars);
 };
 
 exports.getEventsByCalendar = async (req, res) => {

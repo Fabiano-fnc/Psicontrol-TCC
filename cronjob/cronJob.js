@@ -14,13 +14,17 @@ const syncAllCalendars = async () => {
 
   for (const user of users) {
     const { user_id, refresh_token: refreshToken } = user;
+    if (!refreshToken) continue;
 
-    if (refreshToken) {
+    // Falha de um usuário não interrompe a sincronização dos demais
+    try {
       const newAccessToken = await refreshAccessToken(refreshToken);
-      await updateAccessToken(user_id, newAccessToken);
+      if (!newAccessToken) continue;
 
-      // ✅ agora passa userId + token
+      await updateAccessToken(user_id, newAccessToken);
       await syncGoogleCalendarWithDatabase(user_id, newAccessToken);
+    } catch (error) {
+      console.error(`Erro ao sincronizar usuário ${user_id}:`, error.message);
     }
   }
 };
@@ -29,5 +33,7 @@ const syncAllCalendars = async () => {
 cron.schedule("* * * * *", async () => {
   try {
     await syncAllCalendars();
-  } catch (error) {}
+  } catch (error) {
+    console.error("Erro no ciclo de sincronização:", error);
+  }
 });

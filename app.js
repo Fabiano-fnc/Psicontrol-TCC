@@ -1,5 +1,7 @@
 require("dotenv").config();
 const express = require("express");
+// Erros em rotas async viram resposta 500 em vez de derrubar o servidor
+require("express-async-errors");
 const path = require("path");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -12,13 +14,7 @@ const messageRoutes = require("./routes/messageRoutes");
 const {
   handleOAuth2Callback,
   initiateGoogleAuth,
-  syncGoogleCalendarWithDatabase, // Importamos a função de sincronização
 } = require("./controllers/authController");
-const { 
-  getAllAccessToken, 
-  refreshAccessToken, 
-  updateAccessToken 
-} = require("./services/getTokenService"); // Importamos os serviços de token
 const { verifyToken } = require("./middleware/authMiddleware");
 
 const app = express();
@@ -50,35 +46,17 @@ app.get("/auth/google/callback", handleOAuth2Callback);
 require("./cronjob/cronJob");
 app.use("/message", verifyToken, messageRoutes);
 
-// --- MOTOR DE SINCRONIZAÇÃO AUTOMÁTICA ---
-const startAutoSync = () => {
-  // Roda a cada 5 minutos
-  setInterval(async () => {
-    console.log("--- Iniciando Ciclo de Sincronização Automática ---");
-    try {
-      const users = await getAllAccessToken();
-      
-      for (const user of users) {
-        try {
-          console.log(`Sincronizando usuário ID: ${user.user_id}...`);
-          const newAccessToken = await refreshAccessToken(user.refresh_token);
-          
-          if (newAccessToken) {
-            await updateAccessToken(user.user_id, newAccessToken);
-            await syncGoogleCalendarWithDatabase(user.user_id, newAccessToken);
-          }
-        } catch (err) {
-          console.error(`Erro no usuário ${user.user_id}:`, err.message);
-        }
-      }
-    } catch (error) {
-      console.error("Erro no motor de sincronização:", error);
-    }
-    console.log("--- Ciclo de Sincronização Finalizado ---");
-  }, 5 * 60 * 1000); 
-};
+// Tratamento final de erros: registra e responde 500 sem derrubar o servidor
+app.use((err, req, res, next) => {
+  console.error(`Erro em ${req.method} ${req.originalUrl}:`, err);
+  if (res.headersSent) return;
+  res.status(500).json({ error: "Erro interno do servidor." });
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Promise rejeitada sem tratamento:", reason);
+});
 
 app.listen(port, () => {
   console.log(`Servidor rodando em http://localhost:${port}`);
-  startAutoSync(); // Ativa o motor assim que o servidor sobe
 });

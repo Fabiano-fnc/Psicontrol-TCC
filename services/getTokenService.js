@@ -6,10 +6,8 @@ const getAllAccessToken = async () => {
   try {
     const users = await User.findAll({
       attributes: ["user_id", "access_token", "refresh_token"],
-      where: {
-        access_token: { [Op.ne]: null },
-        refresh_token: { [Op.ne]: null },
-      },
+      // O access_token é renovado a cada ciclo; basta ter o refresh_token
+      where: { refresh_token: { [Op.ne]: null } },
     });
 
     return users;
