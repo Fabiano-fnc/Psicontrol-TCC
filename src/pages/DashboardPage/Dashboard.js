@@ -157,12 +157,14 @@ const DashBoard = () => {
 
     if (response.ok) {
       fetchUnmatchedPatients();
-      fetchUnmatchedPatients();
+      fetchBillingRecords(selectedMonth, selectedYear);
       setIsSearchBarOpen(false);
       setIsConfirmModalOpen(false);
       setSelectedPatient(null);
       ShowVinculateToast();
     } else {
+      const data = await response.json().catch(() => ({}));
+      notify.error(data.error || "Não foi possível vincular o paciente.");
       setIsConfirmModalOpen(false);
     }
   };
@@ -750,6 +752,7 @@ const DashBoard = () => {
               >
                 <SearchBarDashBoard
                   patients={patients}
+                  calendarId={unmatchedPatients[selectedEvent]?.calendar_id}
                   onConfirmPatient={confirmLinkPatient}
                   onClose={() => setIsSearchBarOpen(false)}
                 />

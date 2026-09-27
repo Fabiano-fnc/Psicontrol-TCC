@@ -56,6 +56,16 @@ export const deleteCustomer = async (customerId) => {
     return response;
   };
 
+  export const fetchSavedCalendars = async () => {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/events/calendars/saved`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
+      },
+    });
+
+    return response.ok ? response.json() : [];
+  };
+
   export const fetchCustomers = async () => {
     const response = await fetch(`${process.env.REACT_APP_API_URL}/events/customers`, {
       method: "GET",

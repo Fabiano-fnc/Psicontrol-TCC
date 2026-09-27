@@ -2,7 +2,12 @@ import React, { useState, useRef, useEffect } from "react";
 import { ArrowLeftIcon, CloseIcon, SearchIcon } from "../../../icons/icons";
 import { fetchCustomers } from "../../../service/pagesService/pagesService";
 
-const SearchBarDashBoard = ({ patients, onConfirmPatient, onClose }) => {
+const SearchBarDashBoard = ({
+  patients,
+  calendarId,
+  onConfirmPatient,
+  onClose,
+}) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredPatients, setFilteredPatients] = useState([]);
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
@@ -28,10 +33,16 @@ const SearchBarDashBoard = ({ patients, onConfirmPatient, onClose }) => {
       setIsDropdownVisible(false);
     } else {
       // Filtro local
-      const localFiltered = patients.filter((patient) =>
-        patient?.Customer?.customer_name
-          ?.toLowerCase()
-          .includes(searchTerm.toLowerCase())
+      // Só pacientes do mesmo calendário do evento podem ser vinculados
+      const sameCalendar = (patientCalendarId) =>
+        !calendarId || !patientCalendarId || patientCalendarId === calendarId;
+
+      const localFiltered = patients.filter(
+        (patient) =>
+          sameCalendar(patient?.Customer?.calendar_id) &&
+          patient?.Customer?.customer_name
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase())
       );
 
       // Filtro remoto, garantindo que não haja duplicados
@@ -40,6 +51,7 @@ const SearchBarDashBoard = ({ patients, onConfirmPatient, onClose }) => {
           !localFiltered.some(
             (local) => local.Customer?.customer_id === remotePatient.customer_id
           ) &&
+          sameCalendar(remotePatient.calendar_id) &&
           remotePatient?.customer_name
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase())
@@ -51,7 +63,7 @@ const SearchBarDashBoard = ({ patients, onConfirmPatient, onClose }) => {
       setFilteredPatients(combinedResults);
       setIsDropdownVisible(true);
     }
-  }, [searchTerm, patients, remotePatients]);
+  }, [searchTerm, patients, remotePatients, calendarId]);
 
   const handleClearSearch = () => {
     setSearchTerm("");

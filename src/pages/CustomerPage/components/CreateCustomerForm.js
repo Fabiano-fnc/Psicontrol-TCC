@@ -10,7 +10,10 @@ import { AddIcon, Trash } from "../../../icons/icons";
 import "../../../index.css";
 import { showErrorToast } from "../../../utils/notification/toastify";
 import { showEditToast } from "../components/notiificationCustomerPage";
-import { createOrUpdateCustomer } from "../../../service/pagesService/pagesService";
+import {
+  createOrUpdateCustomer,
+  fetchSavedCalendars,
+} from "../../../service/pagesService/pagesService";
 import { showSuccessToast } from "../components/notiificationCustomerPage";
 import {
   onlyDigits,
@@ -48,6 +51,27 @@ const CreateCustomerForm = ({
 }) => {
   const [additionalAlternatives, setAdditionalAlternatives] = useState([]);
   const [startDate, setStartDate] = useState(null);
+  const [calendars, setCalendars] = useState([]);
+
+  useEffect(() => {
+    fetchSavedCalendars()
+      .then(setCalendars)
+      .catch(() => setCalendars([]));
+  }, []);
+
+  // Habilitados + o calendário atual do paciente (mesmo que desabilitado)
+  const calendarOptions = calendars.filter(
+    (cal) => cal.enabled || cal.calendar_id === customer.calendar_id
+  );
+  const enabledCount = calendars.filter((cal) => cal.enabled).length;
+
+  // Com um único calendário habilitado, já deixa ele selecionado
+  useEffect(() => {
+    const enabled = calendars.filter((cal) => cal.enabled);
+    if (!isEditing && !customer.calendar_id && enabled.length === 1) {
+      setCustomer((prev) => ({ ...prev, calendar_id: enabled[0].calendar_id }));
+    }
+  }, [calendars, isEditing, customer.calendar_id, setCustomer]);
 
   useEffect(() => {
     if (isEditing && selectedPatient && selectedPatient.customer_dob) {
@@ -161,6 +185,11 @@ const CreateCustomerForm = ({
       return;
     }
 
+    if (!customer.calendar_id) {
+      showErrorToast("Selecione o calendário do paciente.");
+      return;
+    }
+
     const isValidDocument = (value) =>
       [11, 14].includes(onlyDigits(value).length);
 
@@ -208,6 +237,7 @@ const CreateCustomerForm = ({
           alternative_name: "",
           alternative_cpf_cnpj: "",
           customer_dob: "",
+          calendar_id: "",
         });
         setAdditionalAlternatives([]);
         onSubmit();
@@ -314,21 +344,63 @@ const CreateCustomerForm = ({
               </div>
             </div>
 
-            <div className="sm:w-1/2">
-              <label className="mb-1 ml-3 block text-base font-normal font-openSans tracking-wide text-texto1">
-                Valor
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                name="consultation_fee"
-                inputMode="decimal"
-                value={customer.consultation_fee || ""}
-                onChange={handleChange}
-                placeholder="R$ 000,00"
-                className="h-[50px] w-full bg-bg1 rounded-xl border border-cinza6 px-4 py-2 text-texto2 shadow-sm focus:border-cinza6/50 focus:outline-none focus:ring disabled:opacity-60"
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 ml-3 block text-base font-normal font-openSans tracking-wide text-texto1">
+                  Valor
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  name="consultation_fee"
+                  inputMode="decimal"
+                  value={customer.consultation_fee || ""}
+                  onChange={handleChange}
+                  placeholder="R$ 000,00"
+                  className="h-[50px] w-full bg-bg1 rounded-xl border border-cinza6 px-4 py-2 text-texto2 shadow-sm focus:border-cinza6/50 focus:outline-none focus:ring disabled:opacity-60"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="customer-calendar"
+                  className="mb-1 ml-3 block text-base font-normal font-openSans tracking-wide text-texto1"
+                >
+                  Calendário
+                </label>
+                <select
+                  id="customer-calendar"
+                  name="calendar_id"
+                  value={customer.calendar_id || ""}
+                  onChange={handleChange}
+                  required
+                  className="h-[50px] w-full bg-bg1 rounded-xl border border-cinza6 px-3 py-2 text-texto2 shadow-sm focus:border-cinza6/50 focus:outline-none focus:ring"
+                >
+                  <option value="" disabled>
+                    Selecione
+                  </option>
+                  {calendarOptions.map((cal) => (
+                    <option key={cal.calendar_id} value={cal.calendar_id}>
+                      {cal.calendar_name}
+                      {cal.enabled ? "" : " (desabilitado)"}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
+            {calendars.length > 0 && enabledCount === 0 && (
+              <p className="ml-3 text-sm text-erro">
+                Nenhum calendário habilitado. Habilite um no seu Perfil.
+              </p>
+            )}
+            {isEditing &&
+              selectedPatient?.calendar_id &&
+              customer.calendar_id !== selectedPatient.calendar_id && (
+                <p className="ml-3 text-sm text-texto3">
+                  As consultas do calendário anterior deixarão de contar para
+                  este paciente.
+                </p>
+              )}
           </div>
         </div>
 

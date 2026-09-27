@@ -88,7 +88,7 @@ const UserPage = () => {
   const toggleCalendar = async (calendarId) => {
     const isEnabled = !selectedCalendars.has(calendarId);
 
-    const calendar = calendars.find((cal) => cal.id === calendarId);
+    const calendar = calendars.find((cal) => cal.calendar_id === calendarId);
 
     const response = await fetch(
       `${process.env.REACT_APP_API_URL}/events/calendars/selection/${calendarId}`,
@@ -100,7 +100,7 @@ const UserPage = () => {
         },
         body: JSON.stringify({
           enabled: isEnabled,
-          calendar_name: calendar ? calendar.summary : "default name",
+          calendar_name: calendar ? calendar.calendar_name : "default name",
         }),
       }
     );
