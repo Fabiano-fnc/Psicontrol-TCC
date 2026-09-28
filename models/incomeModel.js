@@ -39,6 +39,11 @@ const income = sequelize.define(
       type: DataTypes.STRING(10),
       allowNull: false,
     },
+    // null = lançamento "Geral", sem calendário
+    calendar_id: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
   },
   {
     tableName: "income",

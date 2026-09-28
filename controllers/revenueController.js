@@ -1,4 +1,4 @@
-const { income, User } = require("../models");
+const { income, User, Calendar } = require("../models");
 const { format, parseISO, subMonths, isoDate } = require("date-fns");
 const { ptBR } = require("date-fns/locale");
 const {
@@ -8,63 +8,60 @@ const {
   formatDateIso,
 } = require("../utils/dateUtils"); // Altere para o caminho correto
 
+const ENTRY_LABELS = { revenue: "receita", expense: "despesa" };
+
+// calendar_id é opcional: vazio/null = lançamento "Geral"
+const addEntry = async (req, res, type) => {
+  const label = ENTRY_LABELS[type];
+  try {
+    const { date, name, value, calendar_id } = req.body;
+    const user = req.user;
+
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ error: "Nome é obrigatório" });
+    }
+
+    const numericValue = Number(value);
+    if (value === null || value === "" || !Number.isFinite(numericValue) || numericValue < 0) {
+      return res.status(400).json({ error: "Valor inválido" });
+    }
+
+    // Usa a função para analisar a data no formato brasileiro
+    const parsedDate = parseBrazilianDate(date);
+    if (!parsedDate) {
+      return res.status(400).json({ error: "Data inválida" });
+    }
+
+    const calendarId = calendar_id || null;
+    if (calendarId) {
+      const calendar = await Calendar.findOne({
+        where: { user_id: user.user_id, calendar_id: calendarId, enabled: true },
+      });
+      if (!calendar) {
+        return res.status(400).json({ error: "Calendário inválido" });
+      }
+    }
+
+    const entry = await income.create({
+      user_id: user.user_id,
+      date: formatDateIso(parsedDate),
+      name: name.trim(),
+      value: numericValue,
+      type,
+      month_year: format(parsedDate, "MM/yy"),
+      calendar_id: calendarId,
+    });
+    res.status(201).json(entry);
+  } catch (error) {
+    console.error(`Erro ao adicionar ${label}:`, error.message);
+    res.status(500).json({ error: `Erro ao adicionar ${label}` });
+  }
+};
+
 const revenueController = {
-  addRevenue: async (req, res) => {
-    try {
-      const { date, name, value } = req.body;
-      const user = req.user;
+  addRevenue: (req, res) => addEntry(req, res, "revenue"),
 
-      // Usa a função para analisar a data no formato brasileiro
-      const parsedDate = parseBrazilianDate(date);
-      if (!parsedDate) {
-        return res.status(400).json({ error: "Data inválida" });
-      }
-
-      const isoDate = formatDateIso(parsedDate); // Converte a data para o formato ISO
-      const monthYear = format(parsedDate, "MM/yy"); // Extraí mês e ano
-
-      const revenue = await income.create({
-        user_id: user.user_id,
-        date: isoDate,
-        name,
-        value,
-        type: "revenue",
-        month_year: monthYear,
-      });
-      res.status(201).json(revenue);
-    } catch (error) {
-      console.error("Erro ao adicionar receita:", error.message);
-      res.status(500).json({ error: "Erro ao adicionar receita" });
-    }
-  },
-
-  addExpense: async (req, res) => {
-    try {
-      const { date, name, value } = req.body;
-      const user = req.user;
-
-      const parsedDate = parseBrazilianDate(date);
-      if (!parsedDate) {
-        return res.status(400).json({ error: "Data inválida" });
-      }
-
-      const isoDate = formatDateIso(parsedDate);
-      const monthYear = format(parsedDate, "MM/yy");
-
-      const expense = await income.create({
-        user_id: user.user_id,
-        date: isoDate,
-        name,
-        value,
-        type: "expense",
-        month_year: monthYear,
-      });
-      res.status(201).json(expense);
-    } catch (error) {
-      console.error("Erro ao adicionar despesa:", error.message);
-      res.status(500).json({ error: "Erro ao adicionar despesa" });
-    }
-  },
+  addExpense: (req, res) => addEntry(req, res, "expense"),
 
   repeatLastMonthEntries: async (req, res) => {
     try {
@@ -124,7 +121,8 @@ const revenueController = {
         name: revenue.name,
         value: revenue.value,
         type: "revenue",
-        month_year: currentMonth, 
+        month_year: currentMonth,
+        calendar_id: revenue.calendar_id,
       }));
   
       const newExpenses = expensesLastMonth.map((expense) => ({
@@ -133,7 +131,8 @@ const revenueController = {
         name: expense.name,
         value: expense.value,
         type: "expense",
-        month_year: currentMonth, 
+        month_year: currentMonth,
+        calendar_id: expense.calendar_id,
       }));
   
       const createdRevenues = await income.bulkCreate(newRevenues);
@@ -220,7 +219,7 @@ const revenueController = {
       const { id } = req.params;
 
       const revenue = await income.destroy({
-        where: { id },
+        where: { id, user_id: req.user.user_id, type: "revenue" },
       });
 
       if (revenue > 0) {
@@ -238,7 +237,7 @@ const revenueController = {
     try {
       const { id } = req.params;
       const expense = await income.destroy({
-        where: { id },
+        where: { id, user_id: req.user.user_id, type: "expense" },
       });
 
       if (expense > 0) {

@@ -155,23 +155,23 @@ exports.getBillingRecordsByMonthAndYear = async (req, res) => {
   }, 0);
 
   const monthYear = `${month}/${year.slice(-2)}`;
+  // Lançamentos "Geral" (sem calendário) sempre entram; os demais só se o calendário estiver habilitado
+  const incomeWhere = {
+    user_id: userId,
+    month_year: monthYear,
+    [Op.or]: [
+      { calendar_id: null },
+      { calendar_id: enabledCalendarIds },
+    ],
+  };
   const revenues = await income.findAll({
-    where: {
-      user_id: userId,
-      type: "revenue",
-      month_year: monthYear,
-    },
+    where: { ...incomeWhere, type: "revenue" },
   });
 
   const expenses = await income.findAll({
-    where: {
-      user_id: userId,
-      type: "expense",
-      month_year: monthYear,
-    },
+    where: { ...incomeWhere, type: "expense" },
   });
 
-  
 
   const totalRevenueFromIncome = revenues.reduce(
     (acc, revenue) => acc + parseFloat(revenue.value || 0),
