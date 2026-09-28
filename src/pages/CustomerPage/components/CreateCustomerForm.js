@@ -9,6 +9,7 @@ import { ptBR } from "date-fns/locale";
 import { AddIcon, Trash } from "../../../icons/icons";
 import "../../../index.css";
 import { showErrorToast } from "../../../utils/notification/toastify";
+import { notify } from "../../../utils/notification/notify";
 import { showEditToast } from "../components/notiificationCustomerPage";
 import {
   createOrUpdateCustomer,
@@ -247,6 +248,16 @@ const CreateCustomerForm = ({
           showEditToast();
         } else {
           showSuccessToast();
+          // O backend já vincula os eventos "não encontrados" com o nome do paciente
+          if (data.linked_events > 0) {
+            notify.info(
+              `${data.linked_events} ${
+                data.linked_events === 1
+                  ? "consulta da agenda foi vinculada"
+                  : "consultas da agenda foram vinculadas"
+              } automaticamente.`
+            );
+          }
         }
 
         setStartDate(null);

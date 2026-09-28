@@ -36,6 +36,16 @@ const matchesEvent = (customerName, eventName) => {
   return words.length > 1 && event.includes(`${words[0]} ${words[1]}`);
 };
 
+// Abre o cadastro na tela de Pacientes já preenchido (nome, agenda e,
+// se houver, os dados de um cadastro existente em outra agenda)
+const newCustomerState = (event, copyFrom) => ({
+  newCustomer: {
+    customer_name: copyFrom?.customer_name || event?.name || "",
+    calendar_id: event?.calendar_id || "",
+    copyFrom: copyFrom?.customer_id || null,
+  },
+});
+
 const formatDate = (isoDate) => {
   if (!isoDate) return null;
   const [year, month, day] = isoDate.split("-");
@@ -180,6 +190,35 @@ const LinkPatientModal = ({ event, paused = false, onSelect, onClose }) => {
             </div>
           )}
 
+          {event?.duplicate_of && (
+            <div className="mt-3 rounded-xl border border-aviso/40 bg-aviso/10 p-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-texto1">
+                <Icon
+                  d="M12 4 2.5 20h19L12 4ZM12 10v4M12 17h.01"
+                  className="h-4 w-4 shrink-0 text-aviso"
+                />
+                Possível duplicado
+              </p>
+              <p className="mt-1 text-xs leading-relaxed text-texto2">
+                <strong>{event.duplicate_of.customer_name}</strong> já tem
+                consulta neste dia na agenda{" "}
+                <strong>{event.duplicate_of.calendar_name}</strong>, e cada
+                paciente pertence a uma agenda só. Se for a mesma consulta,
+                feche e use “Excluir evento”. Se a pessoa também é atendida em{" "}
+                <strong>{event.calendar_name || "nesta agenda"}</strong>,
+                cadastre-a aqui: as consultas desta agenda são vinculadas na hora.
+              </p>
+              <Link
+                to="/customers"
+                state={newCustomerState(event, event.duplicate_of)}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primaria px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90"
+              >
+                <Icon d="M12 5v14M5 12h14" className="h-3.5 w-3.5" />
+                Cadastrar em {event.calendar_name || "nesta agenda"}
+              </Link>
+            </div>
+          )}
+
           <div className="relative mt-3">
             <Icon
               d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 0 0-15 7.5 7.5 0 0 0 0 15Z"
@@ -209,7 +248,8 @@ const LinkPatientModal = ({ event, paused = false, onSelect, onClose }) => {
                   : "Nenhum paciente cadastrado nesta agenda."}
               </p>
               <Link
-                to="/create-customer"
+                to="/customers"
+                state={newCustomerState(event)}
                 className="rounded-full bg-primaria px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
               >
                 Cadastrar paciente

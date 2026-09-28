@@ -1,11 +1,10 @@
 import React from "react";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Navigate, Route, Routes } from "react-router-dom";
 import { Login } from "./pages/LoginPage/Login";
 import Token from "./utils/token/token";
 import SelectCalendarPage from "./pages/SelectCalendarPage/SelectCalendarPage";
 import Dashboard from "./pages/DashboardPage/Dashboard";
 import CustomersPage from "./pages/CustomerPage/CustomersPage";
-import CreateCustomerPage from "./pages/CustomerPage/components/CreateCustomerForm";
 import IncomePage from "./pages/IncomePage/IncomePage";
 import Layout from "./utils/Layout/layout";
 import Toaster from "./utils/notification/Toaster";
@@ -26,7 +25,13 @@ const App = () => {
           <Route element={<Layout />}>
             <Route path="/create-event-form" element={<Dashboard />} />
             <Route path="/customers" element={<CustomersPage />} />
-            <Route path="/create-customer" element={<CreateCustomerPage />} />
+            {/* O cadastro fica em /customers; a rota antiga só abre o formulário lá */}
+            <Route
+              path="/create-customer"
+              element={
+                <Navigate to="/customers" replace state={{ newCustomer: {} }} />
+              }
+            />
             <Route path="/income" element={<IncomePage />} />
             <Route path="/archived" element={<ArchivedPage />} />
             <Route path="/user" element={<UserPage />} />

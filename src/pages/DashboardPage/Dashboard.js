@@ -787,7 +787,32 @@ const DashBoard = () => {
                         className="border-b border-b-cinza6 last:border-b-0"
                       >
                         <td className="flex items-center justify-between gap-3 px-4 py-2 text-sm md:text-F15 text-texto1">
-                          <span className="break-words">{event.name}</span>
+                          <span className="min-w-0">
+                            <span className="block break-words">
+                              {event.name}
+                            </span>
+                            <span className="block text-xs text-texto3">
+                              {[
+                                event.date &&
+                                  event.date.split("-").reverse().join("/"),
+                                event.calendar_name,
+                              ]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                            {event.duplicate_of && (
+                              <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-texto2">
+                                <span className="rounded-full bg-aviso/15 px-2 py-0.5 font-semibold text-texto1">
+                                  Possível duplicado
+                                </span>
+                                <span>
+                                  {event.duplicate_of.customer_name} já tem
+                                  consulta neste dia em{" "}
+                                  {event.duplicate_of.calendar_name}
+                                </span>
+                              </span>
+                            )}
+                          </span>
                           <button
                             data-menu
                             className={`${actionButtonClass} shrink-0 ${

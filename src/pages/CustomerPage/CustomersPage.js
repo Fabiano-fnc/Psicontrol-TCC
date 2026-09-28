@@ -21,7 +21,7 @@ import { useOutsideClick } from "../../utils/OutsideClick/useOutsideClick";
 import { useModal } from "../../utils/Modal/useModal";
 import DropDonw from "./components/dropdownCustomerPage";
 import { showErrorToast } from "../../utils/notification/toastify";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArchiveCustomer,
   deleteCustomer,
@@ -32,6 +32,7 @@ const CustomersPage = () => {
   const [customers, setCustomers] = useState([]);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
   const { isModalOpen, openModal, closeModal } = useModal();
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [selectedPatient, setSelectedPatient] = useState(null);
@@ -49,6 +50,7 @@ const CustomersPage = () => {
   const dropdownRef = useRef();
   const searchDropRef = useRef();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useOutsideClick(searchDropRef, () => setFilteredCustomers([]));
   useOutsideClick(dropdownRef, () => setActiveDropdown(null));
@@ -72,6 +74,7 @@ const CustomersPage = () => {
     }
 
     setIsLoading(false);
+    setHasLoaded(true);
   };
 
   useEffect(() => {
@@ -141,7 +144,7 @@ const CustomersPage = () => {
     }
   };
 
-  const handleAddPatient = () => {
+  const handleAddPatient = (prefill = {}) => {
     setCustomer({
       customer_name: "",
       customer_cpf_cnpj: "",
@@ -151,10 +154,33 @@ const CustomersPage = () => {
       customer_dob: "",
       alternative_name: "",
       alternative_cpf_cnpj: "",
+      ...prefill,
     });
     setIsEditing(false);
     openModal();
   };
+
+  // Vindo do dashboard ("Cadastrar paciente"): abre o cadastro já preenchido.
+  // copyFrom = paciente de outra agenda cujos dados são reaproveitados
+  const newCustomerRequest = location.state?.newCustomer;
+  useEffect(() => {
+    if (!newCustomerRequest || !hasLoaded) return;
+    const { copyFrom, ...prefill } = newCustomerRequest;
+    const source = customers.find((c) => c.customer_id === copyFrom);
+    handleAddPatient({
+      ...(source && {
+        customer_cpf_cnpj: source.customer_cpf_cnpj || "",
+        customer_phone: source.customer_phone || "",
+        customer_email: source.customer_email || "",
+        consultation_fee: source.consultation_fee || "",
+        alternative_name: source.alternative_name || "",
+        alternative_cpf_cnpj: source.alternative_cpf_cnpj || "",
+      }),
+      ...prefill,
+    });
+    navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newCustomerRequest, hasLoaded, customers]);
 
   const handleEditPatient = (patient) => {
     setActiveDropdown(null);
@@ -275,7 +301,7 @@ const CustomersPage = () => {
 
           <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
             <button
-              onClick={handleAddPatient}
+              onClick={() => handleAddPatient()}
               className="flex h-[41px] w-[200px] items-center justify-center space-x-2 rounded-[10px] border-2 border-solid border-primaria bg-bg1 px-4 text-center font-ubuntu text-sm font-semibold leading-[20px] tracking-[0.15px] text-primaria shadow-md hover:bg-clara4 active:shadow-innerShadow"
             >
               <AddIcon />
