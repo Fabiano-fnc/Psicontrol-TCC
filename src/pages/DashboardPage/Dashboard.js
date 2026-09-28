@@ -6,7 +6,7 @@ import "../../index.css";
 import ConfirmDialog from "../../utils/Modal/ConfirmDialog";
 import DeletePatientModal from "./components/DeletePatientModal";
 import DropDownDashBoard from "./components/DropDownDashBoard";
-import SearchBarDashBoard from "./components/SearchBarDashBoard";
+import LinkPatientModal from "./components/LinkPatientModal";
 import {
   ShowVinculateToast,
   showDeleteToast,
@@ -776,21 +776,6 @@ const DashBoard = () => {
               Pacientes não encontrados
             </h2>
 
-            {isSearchBarOpen && (
-              <div
-                className="absolute inset-0 z-20 rounded-lg md:rounded-xl bg-bg1/30 p-4 backdrop-blur-sm"
-                onClick={(e) => {
-                  if (e.target === e.currentTarget) setIsSearchBarOpen(false);
-                }}
-              >
-                <SearchBarDashBoard
-                  patients={patients}
-                  calendarId={unmatchedPatients[selectedEvent]?.calendar_id}
-                  onConfirmPatient={confirmLinkPatient}
-                  onClose={() => setIsSearchBarOpen(false)}
-                />
-              </div>
-            )}
 
             <div className="mt-2 max-h-[263px] min-h-[140px] overflow-y-auto">
               <table className="min-w-full bg-bg1">
@@ -846,6 +831,15 @@ const DashBoard = () => {
                 }}
               />
             </div>
+          )}
+
+          {isSearchBarOpen && (
+            <LinkPatientModal
+              event={unmatchedPatients[selectedEvent]}
+              paused={isConfirmModalOpen}
+              onSelect={confirmLinkPatient}
+              onClose={() => setIsSearchBarOpen(false)}
+            />
           )}
 
           <DeletePatientModal
