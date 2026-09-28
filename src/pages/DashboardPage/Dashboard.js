@@ -1,8 +1,9 @@
 import { notify } from "../../utils/notification/notify";
 import { formatBRL } from "../../utils/format/format";
-import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
+import { useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect } from "react";
 import "../../index.css";
+import ConfirmDialog from "../../utils/Modal/ConfirmDialog";
 import DeletePatientModal from "./components/DeletePatientModal";
 import DropDownDashBoard from "./components/DropDownDashBoard";
 import SearchBarDashBoard from "./components/SearchBarDashBoard";
@@ -849,6 +850,11 @@ const DashBoard = () => {
 
           <DeletePatientModal
             isOpen={isDeleteModalOpen}
+            eventName={
+              unmatchedPatients.find(
+                (event) => event.google_event_id === eventToDelete
+              )?.name
+            }
             onClose={() => setIsDeleteModalOpen(false)}
             onConfirm={confirmDelete}
           />
@@ -885,41 +891,31 @@ const DashBoard = () => {
       )}
 
       {isConfirmModalOpen && (
-        <div
-          onClick={closeOnBackdrop(closeConfirmModal)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-destaque bg-opacity-30 p-4 backdrop-blur-[6px]">
-          <div className="w-full max-w-[335px] rounded-lg border border-cinza6 bg-bg1 p-6 text-center shadow-default">
-            <p className="mb-4 text-base md:text-[21px] text-texto2 font-medium font-ubuntu leading-6 tracking-tight">
-              Você tem certeza que deseja{" "}
-              <span className="text-primaria">vincular</span> este paciente à
-              informação{" "}
-              <span>
-                “
-                {selectedPatient?.Customer?.customer_name ||
-                  selectedPatient?.customer_name ||
-                  "Nome não disponível"}
-                ”
-              </span>
-              ?
-            </p>
-            <div className="mt-4 flex justify-around">
-              <button
-                onClick={() => {
-                  setIsConfirmModalOpen(false);
-                }}
-                className="flex h-[36px] w-[74px] items-center justify-center rounded-full border border-primaria text-sm text-primaria shadow md:h-[40px]"
-              >
-                Não
-              </button>
-              <button
-                onClick={() => handleLinkPatient(selectedPatient?.customer_id)}
-                className="flex h-[36px] w-[74px] items-center justify-center rounded-full bg-primaria text-sm text-texto4 shadow md:h-[40px]"
-              >
-                Sim
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          icon="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"
+          title="Vincular paciente?"
+          confirmLabel="Vincular"
+          onCancel={closeConfirmModal}
+          onConfirm={() => handleLinkPatient(selectedPatient?.customer_id)}
+        >
+          {unmatchedPatients[selectedEvent]?.name ? (
+            <>
+              O evento{" "}
+              <strong className="text-texto1">
+                “{unmatchedPatients[selectedEvent].name}”
+              </strong>{" "}
+              será vinculado a{" "}
+            </>
+          ) : (
+            "Os eventos serão vinculados a "
+          )}
+          <strong className="text-texto1">
+            {selectedPatient?.Customer?.customer_name ||
+              selectedPatient?.customer_name ||
+              "este paciente"}
+          </strong>
+          .
+        </ConfirmDialog>
       )}
     </div>
   );

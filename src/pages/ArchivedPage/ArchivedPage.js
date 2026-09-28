@@ -1,4 +1,5 @@
-import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
+import { useEscapeKey } from "../../utils/Modal/useDismiss";
+import ConfirmDialog from "../../utils/Modal/ConfirmDialog";
 import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -257,31 +258,17 @@ const ArchivedPage = () => {
       </div>
 
       {isConfirmModalOpen && (
-        <div
-          onClick={closeOnBackdrop(closeDeleteModal)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-destaque bg-opacity-30 p-4 backdrop-blur-[6px]">
-          <div className="w-full max-w-[335px] rounded-lg border border-cinza6 bg-bg1 p-6 text-center shadow-default">
-            <p className="mb-6 text-lg font-semibold text-texto2">
-              Você tem certeza que deseja
-              <span className="text-primaria"> excluir </span>
-              este paciente de forma permanente?
-            </p>
-            <div className="flex justify-around">
-              <button
-                onClick={() => setIsConfirmModalOpen(false)}
-                className="inline-flex h-[40px] w-[74px] items-center justify-center rounded-full border border-primaria text-primaria shadow"
-              >
-                Não
-              </button>
-              <button
-                onClick={handleDeleteCustomer}
-                className="inline-flex h-[40px] w-[74px] items-center justify-center rounded-full bg-primaria text-texto4 shadow"
-              >
-                Sim
-              </button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          tone="danger"
+          title="Excluir paciente?"
+          confirmLabel="Excluir"
+          onCancel={closeDeleteModal}
+          onConfirm={handleDeleteCustomer}
+        >
+          O cadastro e o histórico de cobranças serão apagados, e as consultas
+          voltam para “Pacientes não encontrados”. Esta ação não pode ser
+          desfeita.
+        </ConfirmDialog>
       )}
     </div>
   );

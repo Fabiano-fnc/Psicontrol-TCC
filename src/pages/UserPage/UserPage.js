@@ -2,6 +2,7 @@ import { notify } from "../../utils/notification/notify";
 import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect, useRef } from "react";
 import { showAlteredToast } from "./components/toastUserPage";
+import ConfirmDialog from "../../utils/Modal/ConfirmDialog";
 import { showErrorToast } from "../../utils/notification/toastify";
 import {
   onlyDigits,
@@ -471,32 +472,6 @@ const UserPage = () => {
     </div>
   );
 
-  const ConfirmModal = ({ children, onCancel, onConfirm }) => (
-    <div
-      onClick={closeOnBackdrop(onCancel)}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
-      <div className="w-full max-w-[335px] rounded-lg border border-cinza6 bg-white p-6 shadow-lg">
-        <p className="mb-8 text-center text-lg md:text-[21px] font-medium font-ubuntu tracking-tight text-texto2">
-          {children}
-        </p>
-        <div className="flex justify-around">
-          <button
-            onClick={onCancel}
-            className="h-10 w-[100px] rounded-full border border-primaria bg-white text-center font-semibold text-primaria hover:bg-clara4"
-          >
-            Não
-          </button>
-          <button
-            onClick={onConfirm}
-            className="h-10 w-[100px] rounded-full bg-primaria text-center font-semibold text-white hover:opacity-90"
-          >
-            Sim
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
       <div className="mx-auto flex w-full max-w-[1076px] flex-col gap-4 md:gap-6">
@@ -644,7 +619,7 @@ const UserPage = () => {
                 const active = selectedCalendars.has(calendar.calendar_id);
                 return (
                   <li key={calendar.calendar_id}>
-                    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-clara4">
+                    <label className="relative flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-clara4">
                       <span className="flex min-w-0 items-center gap-3">
                         <span
                           className={`h-2.5 w-2.5 shrink-0 rounded-full ${
@@ -834,41 +809,59 @@ const UserPage = () => {
       </div>
 
       {isModalOpen && (
-        <ConfirmModal
+        <ConfirmDialog
+          tone="warning"
+          icon={icons.refresh}
+          title="Trocar de conta Google?"
+          confirmLabel="Trocar conta"
           onCancel={closeModal}
           onConfirm={() => {
             closeModal();
             handleChangeAccount();
           }}
         >
-          Você tem certeza que deseja
-          <span className="text-primaria"> trocar de conta?</span>
-        </ConfirmModal>
+          Você será levado ao Google para entrar com outra conta. As agendas
+          da conta atual deixam de ser encontradas no Google.
+        </ConfirmDialog>
       )}
 
       {isConfirmationModalOpen && (
-        <ConfirmModal
+        <ConfirmDialog
+          icon={icons.calendar}
+          title={
+            selectedCalendars.has(activeCalendarId)
+              ? "Desativar agenda?"
+              : "Ativar agenda?"
+          }
+          confirmLabel={
+            selectedCalendars.has(activeCalendarId) ? "Desativar" : "Ativar"
+          }
           onCancel={closeConfirmationModal}
           onConfirm={() => handleToggleCalendar(activeCalendarId)}
         >
-          Você tem certeza que deseja{" "}
-          <span className="text-primaria">
-            {selectedCalendars.has(activeCalendarId)
-              ? "desativar a agenda?"
-              : "ativar a agenda?"}
-          </span>
-        </ConfirmModal>
+          <strong className="text-texto1">
+            {calendars.find((cal) => cal.calendar_id === activeCalendarId)
+              ?.calendar_name}
+          </strong>{" "}
+          {selectedCalendars.has(activeCalendarId)
+            ? "deixa de ser sincronizada e sai do dashboard e dos seletores. O histórico é mantido."
+            : "passa a ser sincronizada e entra no dashboard."}
+        </ConfirmDialog>
       )}
 
       {calendarToRemove && (
-        <ConfirmModal
+        <ConfirmDialog
+          tone="danger"
+          title="Remover agenda?"
+          confirmLabel="Remover"
           onCancel={() => setCalendarToRemove(null)}
           onConfirm={() => removeCalendar(calendarToRemove)}
         >
-          Você tem certeza que deseja
-          <span className="text-erro"> remover </span>a agenda "
-          {calendarToRemove.calendar_name}"?
-        </ConfirmModal>
+          <strong className="text-texto1">
+            {calendarToRemove.calendar_name}
+          </strong>{" "}
+          será removida do Psicontrol. Nada é alterado no Google Agenda.
+        </ConfirmDialog>
       )}
 
       {isEditing && (

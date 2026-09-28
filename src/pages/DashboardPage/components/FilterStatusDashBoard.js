@@ -93,7 +93,7 @@ const FilterStatusDashBoard = ({ selectedStatus, onChangeStatus }) => {
                   <label
                     key={option.id}
                     htmlFor={option.id}
-                    className={`flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 text-sm font-openSans transition ${
+                    className={`relative flex cursor-pointer items-center gap-3 rounded-xl px-2 py-2 text-sm font-openSans transition ${
                       checked
                         ? "bg-clara4 font-semibold text-primaria"
                         : "text-texto2 hover:bg-clara4"
