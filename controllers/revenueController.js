@@ -1,4 +1,5 @@
 const { income, User, Calendar } = require("../models");
+const { Op } = require("sequelize");
 const { format, parseISO, subMonths, isoDate } = require("date-fns");
 const { ptBR } = require("date-fns/locale");
 const {
@@ -9,6 +10,22 @@ const {
 } = require("../utils/dateUtils"); // Altere para o caminho correto
 
 const ENTRY_LABELS = { revenue: "receita", expense: "despesa" };
+
+// Mesma regra do dashboard: lançamentos "Geral" (sem agenda) sempre aparecem;
+// os de uma agenda só enquanto ela estiver habilitada
+const visibleEntriesWhere = async (userId) => {
+  const enabledCalendars = await Calendar.findAll({
+    where: { user_id: userId, enabled: true },
+    attributes: ["calendar_id"],
+  });
+  return {
+    user_id: userId,
+    [Op.or]: [
+      { calendar_id: null },
+      { calendar_id: enabledCalendars.map((cal) => cal.calendar_id) },
+    ],
+  };
+};
 
 // calendar_id é opcional: vazio/null = lançamento "Geral"
 const addEntry = async (req, res, type) => {
@@ -81,11 +98,10 @@ const revenueController = {
   
       const currentMonth = format(selectedDate, "MM/yy");
   
+      const visibleWhere = await visibleEntriesWhere(user.user_id);
+
       const existingEntries = await income.findOne({
-        where: {
-          user_id: user.user_id,
-          month_year: currentMonth,
-        },
+        where: { ...visibleWhere, month_year: currentMonth },
       });
   
       if (existingEntries) {
@@ -100,19 +116,11 @@ const revenueController = {
   
       // Buscar receitas e despesas do mês anterior
       const revenuesLastMonth = await income.findAll({
-        where: {
-          user_id: user.user_id,
-          type: "revenue",
-          month_year: lastMonth,
-        },
+        where: { ...visibleWhere, type: "revenue", month_year: lastMonth },
       });
   
       const expensesLastMonth = await income.findAll({
-        where: {
-          user_id: user.user_id,
-          type: "expense",
-          month_year: lastMonth,
-        },
+        where: { ...visibleWhere, type: "expense", month_year: lastMonth },
       });
   
       const newRevenues = revenuesLastMonth.map((revenue) => ({
@@ -158,7 +166,10 @@ const revenueController = {
 
       console.log("Consultando receitas para o mês e ano:", monthYear); // Log adicionado
 
-      const whereClause = { user_id, type: "revenue" };
+      const whereClause = {
+        ...(await visibleEntriesWhere(user_id)),
+        type: "revenue",
+      };
       if (monthYear) whereClause.month_year = monthYear;
 
       const revenues = await income.findAll({ where: whereClause });
@@ -175,7 +186,10 @@ const revenueController = {
       const { monthYear } = req.query;
       const user_id = req.user.user_id;
 
-      const whereClause = { user_id, type: "expense" };
+      const whereClause = {
+        ...(await visibleEntriesWhere(user_id)),
+        type: "expense",
+      };
       if (monthYear) whereClause.month_year = monthYear;
 
       const expenses = await income.findAll({ where: whereClause });
@@ -199,7 +213,7 @@ const revenueController = {
       const monthYear = `${month}/${year.slice(-2)}`;
       console.log("Consultando entradas para:", monthYear);
 
-      const whereClause = { user_id };
+      const whereClause = await visibleEntriesWhere(user_id);
       const revenues = await income.findAll({
         where: { ...whereClause, type: "revenue", month_year: monthYear },
       });
