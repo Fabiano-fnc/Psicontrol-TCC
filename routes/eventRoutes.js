@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const eventController = require("../controllers/eventController");
 const customerController = require("../controllers/customerController");
+const scheduleController = require("../controllers/scheduleController");
 const unmatchedPatientsController = require("../controllers/unmatchedPatientsController");
 const {checkAndHandleCalendars} = require("../controllers/authController");
 const { verifyToken } = require("../middleware/authMiddleware");
@@ -34,6 +35,10 @@ router.put("/customers/:customerId", customerController.editCustomer);
 router.get("/customers/:customerId/profile", customerController.getProfileCustomer);
 router.put("/customers/:customerId/archive", customerController.archiveCustomer);
 router.get("/customers/archived", customerController.getArchivedCustomers); 
+router.post(
+  "/customers/:customerId/schedule",
+  scheduleController.scheduleConsultations
+);
 router.post(
   "/calendars/selection/:calendarId",
   eventController.saveSelectedCalendars
