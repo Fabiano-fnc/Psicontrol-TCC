@@ -39,6 +39,7 @@ exports.formatDateIso = (date) => {
   if (typeof date === "string") {
     date = exports.parseBrazilianDate(date);
   }
+  if (!date) return "";
 
   const year = date.getFullYear();
   if (year < 1900 || year > new Date().getFullYear()) {
@@ -53,6 +54,7 @@ exports.formatDateIso = (date) => {
 };
 
 exports.calculateAge = (dateOfBirth) => {
+  if (!dateOfBirth) return null;
   const dob = new Date(dateOfBirth);
   const today = new Date(); 
   let age = today.getFullYear() - dob.getFullYear();

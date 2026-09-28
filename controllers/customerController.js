@@ -1,4 +1,5 @@
 const { Op } = require("sequelize");
+const Fuse = require("fuse.js");
 const {
   Customer,
   Event,
@@ -7,6 +8,36 @@ const {
 } = require("../models");
 const { formatDateIso, calculateAge } = require("../utils/dateUtils");
 const { updateConsultationDays } = require("../utils/updateConsultationDays");
+
+// Vincula ao paciente recém-cadastrado os eventos "não encontrados" da agenda dele,
+// com a mesma busca por nome da sincronização (vence o paciente mais parecido)
+const linkUnmatchedEvents = async (userId, customer) => {
+  const [patients, events] = await Promise.all([
+    Customer.findAll({
+      where: { user_id: userId, calendar_id: customer.calendar_id },
+    }),
+    Event.findAll({
+      where: {
+        user_id: userId,
+        calendar_id: customer.calendar_id,
+        customer_id: null,
+      },
+    }),
+  ]);
+  const fuse = new Fuse(patients, { keys: ["customer_name"], threshold: 0.3 });
+
+  let linked = 0;
+  for (const event of events) {
+    const name = (event.event_name || "").trim().replace(/^Paciente\s*-\s*/, "");
+    const [best] = fuse.search(name);
+    if (best?.item.customer_id === customer.customer_id) {
+      await event.update({ customer_id: customer.customer_id });
+      linked++;
+    }
+  }
+  if (linked > 0) await updateConsultationDays(customer.customer_id);
+  return linked;
+};
 
 const findEnabledCalendar = (userId, calendarId) =>
   Calendar.findOne({
@@ -57,7 +88,8 @@ exports.upsertCustomer = async (userId, customerData) => {
       ? false
       : null;
 
-  const formattedCustomerDob = formatDateIso(customer_dob);
+  // Nascimento é opcional: vazio ou inválido vira null (antes gravava "Invalid date" e dava 500)
+  const formattedCustomerDob = formatDateIso(customer_dob) || null;
 
   if (!customer_id && !calendar_id) {
     return { status: 400, error: "Selecione o calendário do paciente." };
@@ -144,7 +176,8 @@ exports.upsertCustomer = async (userId, customerData) => {
     });
 
     const age = calculateAge(formattedCustomerDob);
-    return { newCustomer, age };
+    const linked_events = await linkUnmatchedEvents(userId, newCustomer);
+    return { newCustomer, age, linked_events };
   }
 };
 
