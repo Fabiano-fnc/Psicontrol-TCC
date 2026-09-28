@@ -192,11 +192,27 @@ exports.getCustomers = async (req, res) => {
     ],
   });
 
+  // Quantos eventos da agenda cada paciente já tem vinculados
+  const linkedCounts = await Event.findAll({
+    where: { user_id: userId, customer_id: { [Op.ne]: null } },
+    attributes: [
+      "customer_id",
+      [Event.sequelize.fn("COUNT", Event.sequelize.col("customers_id")), "total"],
+    ],
+    group: ["customer_id"],
+    raw: true,
+  });
+  const linkedByCustomer = linkedCounts.reduce((acc, row) => {
+    acc[row.customer_id] = Number(row.total);
+    return acc;
+  }, {});
+
   let totalConsultations = 0;
   let totalRevenue = 0;
 
   const customersWithConsultationDays = customers.map((customer) => {
     const customerData = customer.toJSON();
+    customerData.linked_events = linkedByCustomer[customerData.customer_id] || 0;
 
     const consultationDays =
       customerData.CustomersBillingRecords &&
