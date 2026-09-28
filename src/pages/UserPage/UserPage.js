@@ -21,6 +21,7 @@ const icons = {
   image:
     "M4 5h16v14H4zM4 16l5-5 4 4 2-2 5 5M15 9.5a1 1 0 1 0 0-.01",
   upload: "M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 4v12M7 9l5-5 5 5",
+  warning: "M12 4 2.5 20h19L12 4ZM12 10v4M12 17h.01",
 };
 
 const Icon = ({ d, className = "h-5 w-5" }) => (
@@ -92,6 +93,7 @@ const UserPage = () => {
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [activeCalendarId, setActiveCalendarId] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [calendarToRemove, setCalendarToRemove] = useState(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -177,6 +179,28 @@ const UserPage = () => {
       return updatedSelected;
     });
 
+    setRefreshKey((prevKey) => prevKey + 1);
+  };
+
+  const removeCalendar = async (calendar) => {
+    setCalendarToRemove(null);
+    const response = await fetch(
+      `${process.env.REACT_APP_API_URL}/events/calendars/${encodeURIComponent(
+        calendar.calendar_id
+      )}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
+        },
+      }
+    );
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      notify.error(body.error || "Não foi possível remover a agenda.");
+      return;
+    }
+    notify.success(`Agenda "${calendar.calendar_name}" removida.`);
     setRefreshKey((prevKey) => prevKey + 1);
   };
 
@@ -388,6 +412,7 @@ const UserPage = () => {
   useEscapeKey(isModalOpen, closeModal);
   useEscapeKey(isConfirmationModalOpen, closeConfirmationModal);
   useEscapeKey(isEditing, closeEdit);
+  useEscapeKey(calendarToRemove !== null, () => setCalendarToRemove(null));
 
   const labelClass =
     "mb-1.5 ml-1 block text-sm font-semibold text-texto2";
@@ -408,7 +433,9 @@ const UserPage = () => {
     typeof userData.image === "string" && userData.image
       ? `${process.env.REACT_APP_API_URL}${userData.image}`
       : null;
-  const enabledCount = calendars.filter((cal) =>
+  const googleCalendars = calendars.filter((cal) => !cal.missing);
+  const missingCalendars = calendars.filter((cal) => cal.missing);
+  const enabledCount = googleCalendars.filter((cal) =>
     selectedCalendars.has(cal.calendar_id)
   ).length;
 
@@ -605,15 +632,15 @@ const UserPage = () => {
               <h3 className="text-sm font-semibold text-texto2">
                 Agendas do Google
               </h3>
-              {calendars.length > 0 && (
+              {googleCalendars.length > 0 && (
                 <span className="rounded-full bg-clara3 px-2.5 py-0.5 text-xs font-semibold text-primaria">
-                  {enabledCount} de {calendars.length} ativas
+                  {enabledCount} de {googleCalendars.length} ativas
                 </span>
               )}
             </div>
 
             <ul className="mt-2 max-h-[232px] space-y-1 overflow-y-auto pr-1">
-              {calendars.map((calendar) => {
+              {googleCalendars.map((calendar) => {
                 const active = selectedCalendars.has(calendar.calendar_id);
                 return (
                   <li key={calendar.calendar_id}>
@@ -657,12 +684,63 @@ const UserPage = () => {
                   </li>
                 );
               })}
-              {calendars.length === 0 && (
+              {googleCalendars.length === 0 && (
                 <li className="px-3 py-4 text-center text-sm text-texto3">
                   Nenhuma agenda encontrada.
                 </li>
               )}
             </ul>
+
+            {missingCalendars.length > 0 && (
+              <div className="mt-4 rounded-xl border border-aviso/40 bg-aviso/10 p-3">
+                <p className="flex items-center gap-2 text-sm font-semibold text-texto1">
+                  <Icon d={icons.warning} className="h-4 w-4 text-aviso" />
+                  Não encontradas no Google
+                </p>
+                <p className="mt-0.5 text-xs text-texto2">
+                  Foram apagadas no Google ou são de outra conta.
+                </p>
+                <ul className="mt-2 space-y-1">
+                  {missingCalendars.map((calendar) => (
+                    <li
+                      key={calendar.calendar_id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-bg1 px-3 py-2"
+                    >
+                      <span className="min-w-0 break-words text-sm font-semibold text-texto1">
+                        {calendar.calendar_name}
+                        <span
+                          className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                            calendar.enabled
+                              ? "bg-aviso/20 text-texto1"
+                              : "bg-clara4 text-texto3"
+                          }`}
+                        >
+                          {calendar.enabled ? "Ativa" : "Desativada"}
+                        </span>
+                      </span>
+                      <span className="flex gap-1">
+                        {calendar.enabled && (
+                          <button
+                            onClick={() =>
+                              openConfirmationModal(calendar.calendar_id)
+                            }
+                            className="rounded-full px-3 py-1 text-xs font-semibold text-primaria hover:bg-clara4"
+                          >
+                            Desativar
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setCalendarToRemove(calendar)}
+                          className="rounded-full px-3 py-1 text-xs font-semibold text-erro hover:bg-erro/5"
+                        >
+                          Remover
+                        </button>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* Mensagem de cobrança */}
@@ -779,6 +857,17 @@ const UserPage = () => {
               ? "desativar a agenda?"
               : "ativar a agenda?"}
           </span>
+        </ConfirmModal>
+      )}
+
+      {calendarToRemove && (
+        <ConfirmModal
+          onCancel={() => setCalendarToRemove(null)}
+          onConfirm={() => removeCalendar(calendarToRemove)}
+        >
+          Você tem certeza que deseja
+          <span className="text-erro"> remover </span>a agenda "
+          {calendarToRemove.calendar_name}"?
         </ConfirmModal>
       )}
 
