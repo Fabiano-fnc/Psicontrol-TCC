@@ -268,11 +268,14 @@ async function handleOAuth2Callback(req, res) {
       tokens.refresh_token
     );
 
-    const authenticationToken = bcrypt.hashSync(new Date().toISOString(), 10);
-
+    // Reaproveita a sessão que já existe para que entrar em um aparelho
+    // (ex.: notebook) não desconecte os outros (ex.: celular)
     const user = await User.findOne({ where: { user_email: data.email } });
-    user.autentication_token = authenticationToken;
-    await user.save();
+    if (!user.autentication_token) {
+      user.autentication_token = bcrypt.hashSync(new Date().toISOString(), 10);
+      await user.save();
+    }
+    const authenticationToken = user.autentication_token;
 
     await syncGoogleCalendarWithDatabase(
       user.user_id,
