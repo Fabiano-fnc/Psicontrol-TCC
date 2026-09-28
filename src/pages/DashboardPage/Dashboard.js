@@ -331,6 +331,36 @@ const DashBoard = () => {
     setIsBillingModalOpen(false);
   };
 
+  // Grava que a cobrança do mês foi enviada e atualiza a tabela
+  const markInvoiceSent = async (customerId) => {
+    const response = await fetch(
+      `${process.env.REACT_APP_API_URL}/dashboard/mark-invoice-sent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
+        },
+        body: JSON.stringify({
+          customer_id: customerId,
+          month_and_year: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`,
+        }),
+      }
+    );
+    if (!response.ok) {
+      notify.error("A mensagem foi aberta, mas não foi possível marcar a cobrança como enviada.");
+      return;
+    }
+    setPatients((prevPatients) =>
+      prevPatients.map((patient) =>
+        patient.customer_id === customerId
+          ? { ...patient, sending_invoice: true }
+          : patient
+      )
+    );
+    setIsBillingModalOpen(false);
+  };
+
   const handleSendWhatsApp = async (customer, openModalOnly = false) => {
     const customerId = customer?.customer_id;
 
@@ -359,39 +389,14 @@ const DashBoard = () => {
     setLoading(false);
     if (response.ok) {
       const data = await response.json();
-
-      await fetch(
-        `${process.env.REACT_APP_API_URL}/dashboard/mark-invoice-sent`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem(
-              "authentication_token"
-            )}`,
-          },
-          body: JSON.stringify({
-            customer_id: customerId,
-            month_and_year: `${selectedYear}-${selectedMonth}`,
-          }),
-        }
-      );
-
-      const whatsappLink = data.whatsappLink;
       setBillingMessage(data.user_message);
 
-      setPatients((prevPatients) =>
-        prevPatients.map((patient) =>
-          patient.customer_id === customerId
-            ? { ...patient, sending_invoice: true }
-            : patient
-        )
-      );
-
+      // Só a prévia: nada é marcado como enviado até escolher WhatsApp ou e-mail
       if (openModalOnly) {
         setIsBillingModalOpen(true);
       } else {
-        window.open(whatsappLink, "_blank");
+        window.open(data.whatsappLink, "_blank");
+        await markInvoiceSent(customerId);
       }
     } else {
       const errorData = await response.json();
@@ -429,16 +434,9 @@ const DashBoard = () => {
 
     if (response.ok) {
       const data = await response.json();
-      const mailtoLink = data.mailtoLink;
       setBillingMessage(data.user_message);
-      setPatients((prevPatients) =>
-        prevPatients.map((patient) =>
-          patient.customer_id === customerId
-            ? { ...patient, sending_invoice: true }
-            : patient
-        )
-      );
-      window.open(mailtoLink, "_blank");
+      window.open(data.mailtoLink, "_blank");
+      await markInvoiceSent(customerId);
     } else {
       const errorData = await response.json();
       notify.error(errorData.error || "Não foi possível concluir a ação.");

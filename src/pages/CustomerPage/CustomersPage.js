@@ -1,5 +1,6 @@
 import { useEscapeKey } from "../../utils/Modal/useDismiss";
 import ConfirmDialog from "../../utils/Modal/ConfirmDialog";
+import ScheduleConsultations from "./components/ScheduleConsultations";
 import React, { useEffect, useState, useRef } from "react";
 import "../../index.css";
 import CreateCustomerForm, {
@@ -41,6 +42,8 @@ const CustomersPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState(null);
+  // Paciente para agendar consultas (justCreated: logo após o cadastro)
+  const [scheduleFor, setScheduleFor] = useState(null);
   const [isDropdownVisible] = useState(false);
   const [customer, setCustomer] = useState({
     customer_name: "",
@@ -217,6 +220,9 @@ const CustomersPage = () => {
               customer={customer}
               setCustomer={setCustomer}
               isEditing={isEditing}
+              onCreated={(newCustomer) =>
+                setScheduleFor({ customer: newCustomer, justCreated: true })
+              }
               receiptHeader={
                 <div className="flex flex-wrap items-center justify-between gap-3 md:hidden">
                   <h3 className="text-[20px] font-medium font-ubuntu text-primaria">
@@ -369,6 +375,10 @@ const CustomersPage = () => {
                           openModal={() => handleEditPatient(customer)}
                           customers={customers}
                           onArchive={handleArchiveCustomer}
+                          onSchedule={() => {
+                            setActiveDropdown(null);
+                            setScheduleFor({ customer, justCreated: false });
+                          }}
                         />
                       )}
                     </div>
@@ -378,6 +388,15 @@ const CustomersPage = () => {
           )}
         </div>
       </div>
+
+      {scheduleFor && (
+        <ScheduleConsultations
+          customer={scheduleFor.customer}
+          justCreated={scheduleFor.justCreated}
+          onClose={() => setScheduleFor(null)}
+          onScheduled={HandlefetchCustomers}
+        />
+      )}
 
       {isConfirmModalOpen && (
         <ConfirmDialog

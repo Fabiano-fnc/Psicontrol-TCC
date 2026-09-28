@@ -49,6 +49,7 @@ const CreateCustomerForm = ({
   setCustomer,
   isEditing,
   receiptHeader,
+  onCreated,
 }) => {
   const [additionalAlternatives, setAdditionalAlternatives] = useState([]);
   const [startDate, setStartDate] = useState(null);
@@ -248,6 +249,7 @@ const CreateCustomerForm = ({
           showEditToast();
         } else {
           showSuccessToast();
+          onCreated?.(data.newCustomer);
           // O backend já vincula os eventos "não encontrados" com o nome do paciente
           if (data.linked_events > 0) {
             notify.info(
