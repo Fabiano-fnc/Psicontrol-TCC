@@ -52,6 +52,8 @@ const DashBoard = () => {
   const [netTime, setNetTime] = useState(0);
   const [overview, setOverview] = useState(null);
   const [overviewVersion, setOverviewVersion] = useState(0);
+  // Horários das consultas do mês por paciente: { [customer_id]: { times, timed } }
+  const [consultationTimes, setConsultationTimes] = useState({});
   const [billingMessage, setBillingMessage] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
@@ -255,6 +257,27 @@ const DashBoard = () => {
       }
     };
     loadOverview();
+    return () => {
+      active = false;
+    };
+  }, [selectedMonth, selectedYear, overviewVersion]);
+
+  useEffect(() => {
+    let active = true;
+    const loadTimes = async () => {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/dashboard/consultation-times?month=${selectedMonth}&year=${selectedYear}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
+          },
+        }
+      ).catch(() => null);
+      if (response?.ok && active) {
+        setConsultationTimes(await response.json());
+      }
+    };
+    loadTimes();
     return () => {
       active = false;
     };
@@ -652,7 +675,7 @@ const DashBoard = () => {
 
           {/* Faturamento do mês */}
           <div className="relative z-0 w-full overflow-x-auto rounded-lg md:rounded-xl border border-solid border-cinza6 bg-bg1 shadow-card">
-            <table className="w-full min-w-[860px] bg-bg1 text-left">
+            <table className="w-full min-w-[940px] bg-bg1 text-left">
               <thead>
                 <tr>
                   <th className={`${thClass} sticky left-0 z-10 text-left`}>
@@ -660,6 +683,7 @@ const DashBoard = () => {
                   </th>
                   <th className={thClass}>Valor Consulta</th>
                   <th className={thClass}>Dia(s)</th>
+                  <th className={thClass}>Horário</th>
                   <th className={thClass}>Nº de consultas</th>
                   <th className={thClass}>Total</th>
                   <th className={thClass}>Cobrança</th>
@@ -700,6 +724,26 @@ const DashBoard = () => {
                               .sort((a, b) => a - b)
                               .join(", ")
                           : "-"}
+                      </td>
+                      <td className={tdClass}>
+                        {(() => {
+                          const info = consultationTimes[patient.customer_id];
+                          if (!info) {
+                            return <span className="text-texto3">Dia inteiro</span>;
+                          }
+                          const allDay =
+                            (patient.num_consultations || 0) - info.timed;
+                          return (
+                            <div className="flex flex-col items-center leading-tight">
+                              <span>{info.times.join(", ")}</span>
+                              {allDay > 0 && (
+                                <span className="text-xs text-texto3">
+                                  + {allDay} dia inteiro
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className={tdClass}>
                         {patient.num_consultations || "-"}
@@ -760,7 +804,7 @@ const DashBoard = () => {
                 ) : (
                   <tr>
                     <td
-                      colSpan="9"
+                      colSpan="10"
                       className="px-4 py-6 text-center text-sm md:text-base text-texto2"
                     >
                       Nenhum registro encontrado para este mês e ano.
