@@ -18,6 +18,7 @@ import DropDownDashActions from "./components/DropDownDashActions";
 import BillingDashBoard from "./components/BillingDashBoard";
 import ModalPaymentDash from "./components/ModalPaymentDash";
 import FilterStatusDashBoard from "./components/FilterStatusDashBoard";
+import InsightsDashBoard from "./components/InsightsDashBoard";
 import { Months } from "../../utils/Months/months";
 
 const badgeStyles = {
@@ -49,6 +50,8 @@ const DashBoard = () => {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [netRevenue, setNetRevenue] = useState(0);
   const [netTime, setNetTime] = useState(0);
+  const [overview, setOverview] = useState(null);
+  const [overviewVersion, setOverviewVersion] = useState(0);
   const [billingMessage, setBillingMessage] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
@@ -233,6 +236,29 @@ const DashBoard = () => {
     setIsSearchBarOpen(true);
     setIsDropdownOpen(false);
   };
+
+  // Recebido x em aberto e histórico de 6 meses (não bloqueia a tela).
+  // `overviewVersion` muda depois de registrar pagamentos, para recarregar.
+  useEffect(() => {
+    let active = true;
+    const loadOverview = async () => {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/dashboard/overview?month=${selectedMonth}&year=${selectedYear}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
+          },
+        }
+      );
+      if (response.ok && active) {
+        setOverview(await response.json());
+      }
+    };
+    loadOverview();
+    return () => {
+      active = false;
+    };
+  }, [selectedMonth, selectedYear, overviewVersion]);
 
   const fetchBillingRecords = async (month, year) => {
     setLoading(true);
@@ -511,6 +537,7 @@ const DashBoard = () => {
       );
 
       setIsPartialPaymentModalOpen(false);
+      setOverviewVersion((v) => v + 1);
     } else {
       notify.error("Erro ao salvar pagamento parcial.");
     }
@@ -556,6 +583,7 @@ const DashBoard = () => {
             : p
         )
       );
+      setOverviewVersion((v) => v + 1);
     } else {
       notify.error("Erro ao confirmar pagamento.");
     }
@@ -608,6 +636,12 @@ const DashBoard = () => {
               icon="hora"
             />
           </div>
+
+          <InsightsDashBoard
+            overview={overview}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+          />
 
           <div className="relative z-10 mt-6 mb-2 flex justify-end">
             <FilterStatusDashBoard
