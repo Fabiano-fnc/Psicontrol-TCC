@@ -129,9 +129,21 @@ const ArchivedPage = () => {
     <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
       <Link
         to="/customers"
-        className="mb-4 inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium text-primaria underline hover:bg-clara3"
+        className="mb-3 inline-flex w-fit items-center gap-1 rounded-full py-1 pl-1 pr-3 text-sm font-semibold text-texto3 transition hover:bg-clara3 hover:text-primaria focus:outline-none focus-visible:ring-4 focus-visible:ring-clara3 md:mb-4"
       >
-        ← Voltar para pacientes
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-5 w-5"
+          aria-hidden="true"
+        >
+          <path d="M15 18l-6-6 6-6" />
+        </svg>
+        Pacientes
       </Link>
 
       <div className="rounded-xl border border-solid border-cinza6 bg-bg1 shadow-card">

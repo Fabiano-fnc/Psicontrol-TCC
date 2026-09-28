@@ -8,9 +8,6 @@ import CreateCustomerForm, {
 } from "./components/CreateCustomerForm";
 import {
   SearchIcon,
-  AddIcon,
-  ArchiveIcon,
-  HamburguerIcon,
   ArrowLeftIcon,
   CloseIcon,
 } from "../../icons/icons";
@@ -20,7 +17,7 @@ import {
 } from "./components/notiificationCustomerPage";
 import { useOutsideClick } from "../../utils/OutsideClick/useOutsideClick";
 import { useModal } from "../../utils/Modal/useModal";
-import DropDonw from "./components/dropdownCustomerPage";
+import ActionMenu from "../DashboardPage/components/ActionMenu";
 import { showErrorToast } from "../../utils/notification/toastify";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -44,6 +41,7 @@ const CustomersPage = () => {
   const [customerToDelete, setCustomerToDelete] = useState(null);
   // Paciente para agendar consultas (justCreated: logo após o cadastro)
   const [scheduleFor, setScheduleFor] = useState(null);
+  const [menuPosition, setMenuPosition] = useState(null);
   const [isDropdownVisible] = useState(false);
   const [customer, setCustomer] = useState({
     customer_name: "",
@@ -100,9 +98,36 @@ const CustomersPage = () => {
     }
   }, [searchTerm, customers]);
 
-  const toggleDropdown = (customer_id) => {
+  // Menu fixo na tela, como no dashboard: alinhado à direita do botão e
+  // abrindo para cima quando não cabe embaixo
+  const toggleDropdown = (customer_id, clickEvent) => {
+    const rect = clickEvent.currentTarget.getBoundingClientRect();
+    const MENU_W = 264;
+    const MENU_H = 330;
+    const left = Math.min(
+      Math.max(rect.right - MENU_W, 8),
+      window.innerWidth - MENU_W - 8
+    );
+    setMenuPosition(
+      rect.bottom + MENU_H + 8 > window.innerHeight
+        ? { left, bottom: window.innerHeight - rect.top + 4 }
+        : { left, top: rect.bottom + 4 }
+    );
     setActiveDropdown((prev) => (prev === customer_id ? null : customer_id));
   };
+
+  useEscapeKey(activeDropdown !== null, () => setActiveDropdown(null));
+
+  useEffect(() => {
+    if (activeDropdown === null) return;
+    const close = () => setActiveDropdown(null);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
+    return () => {
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
+    };
+  }, [activeDropdown]);
 
   const handleUsePatientData = () => {
     setCustomer((prev) => ({
@@ -305,21 +330,47 @@ const CustomersPage = () => {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
             <button
               onClick={() => handleAddPatient()}
-              className="flex h-[41px] w-[200px] items-center justify-center space-x-2 rounded-[10px] border-2 border-solid border-primaria bg-bg1 px-4 text-center font-ubuntu text-sm font-semibold leading-[20px] tracking-[0.15px] text-primaria shadow-md hover:bg-clara4 active:shadow-innerShadow"
+              className="inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-full bg-primaria px-3 sm:px-5 text-sm font-semibold text-white shadow-card transition hover:opacity-90 focus:outline-none focus-visible:ring-4 focus-visible:ring-clara3 active:scale-[0.98]"
             >
-              <AddIcon />
-              <span>Adicionar paciente</span>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <span className="sm:hidden">Novo paciente</span>
+              <span className="hidden sm:inline">Adicionar paciente</span>
             </button>
 
             <Link
               to="/archived"
-              className="group flex items-center gap-2 whitespace-nowrap text-sm font-medium leading-4 tracking-wider text-primaria underline active:text-primaria/50"
+              className="group inline-flex h-10 items-center justify-center gap-2 whitespace-nowrap rounded-full border border-cinza9 bg-bg1 pl-1.5 pr-4 text-sm font-semibold text-texto2 transition hover:border-primaria/40 hover:text-primaria focus:outline-none focus-visible:ring-4 focus-visible:ring-clara3 active:scale-[0.98]"
             >
-              <ArchiveIcon />
-              Pacientes arquivados
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-clara3 text-primaria transition group-hover:bg-primaria group-hover:text-white">
+                <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-4 w-4"
+                aria-hidden="true"
+              >
+                <path d="M3.5 5h17v4h-17zM5 9v10h14V9M10 13h4" />
+              </svg>
+              </span>
+              <span className="sm:hidden">Arquivados</span>
+              <span className="hidden sm:inline">Pacientes arquivados</span>
             </Link>
           </div>
         </div>
@@ -361,28 +412,69 @@ const CustomersPage = () => {
                       }
                     >
                       <button
-                        onClick={() => toggleDropdown(customer.customer_id)}
-                        className={`flex items-center rounded-full p-2 transition hover:bg-clara3 ${
-                          activeDropdown === customer.customer_id ? "bg-clara3" : ""
+                        onClick={(e) => toggleDropdown(customer.customer_id, e)}
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-texto3 transition hover:bg-clara3 hover:text-primaria focus:outline-none focus-visible:ring-4 focus-visible:ring-clara3 ${
+                          activeDropdown === customer.customer_id
+                            ? "bg-clara3 text-primaria"
+                            : ""
                         }`}
                         aria-label="Ações do paciente"
                         aria-expanded={activeDropdown === customer.customer_id}
                       >
-                        <HamburguerIcon />
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                          className="h-5 w-5"
+                          aria-hidden="true"
+                        >
+                          <circle cx="12" cy="5" r="1.8" />
+                          <circle cx="12" cy="12" r="1.8" />
+                          <circle cx="12" cy="19" r="1.8" />
+                        </svg>
                       </button>
                       {activeDropdown === customer.customer_id && (
-                        <DropDonw
-                          customerId={customer.customer_id}
-                          onDelete={handleDeleteConfirmation}
-                          setSelectedPatient={setSelectedPatient}
-                          openModal={() => handleEditPatient(customer)}
-                          customers={customers}
-                          onArchive={handleArchiveCustomer}
-                          onSchedule={() => {
-                            setActiveDropdown(null);
-                            setScheduleFor({ customer, justCreated: false });
-                          }}
-                        />
+                        <div className="fixed z-40" style={menuPosition}>
+                          <ActionMenu
+                            title={customer.customer_name}
+                            items={[
+                              {
+                                icon: "user",
+                                label: "Conta do paciente",
+                                hint: "Ver dados e recibo",
+                                onClick: () =>
+                                  handleNavigateClick(customer.customer_id),
+                              },
+                              {
+                                icon: "edit",
+                                label: "Editar paciente",
+                                onClick: () => handleEditPatient(customer),
+                              },
+                              {
+                                icon: "calendar",
+                                label: "Agendar consultas",
+                                hint: "Criar no Google Agenda",
+                                onClick: () => {
+                                  setActiveDropdown(null);
+                                  setScheduleFor({ customer, justCreated: false });
+                                },
+                              },
+                              {
+                                icon: "archive",
+                                label: "Arquivar paciente",
+                                hint: "Sai da lista, sem apagar nada",
+                                onClick: () =>
+                                  handleArchiveCustomer(customer.customer_id),
+                              },
+                              {
+                                icon: "trash",
+                                label: "Excluir paciente",
+                                danger: true,
+                                onClick: () =>
+                                  handleDeleteConfirmation(customer.customer_id),
+                              },
+                            ]}
+                          />
+                        </div>
                       )}
                     </div>
                   </li>
