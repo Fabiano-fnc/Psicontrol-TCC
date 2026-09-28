@@ -2,6 +2,7 @@ import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
 import React, { useState, useEffect, useRef } from "react";
 import { Trash, AddIcon } from "../../icons/icons";
 import { Months } from "../../utils/Months/months";
+import { fetchSavedCalendars } from "../../service/pagesService/pagesService";
 import {
   showSaveToast,
   showDeleteToast,
@@ -35,6 +36,7 @@ const IncomePage = () => {
   const [isAddingRevenue, setIsAddingRevenue] = useState([]);
   const [isAddingExpense, setIsAddingExpense] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(null);
+  const [calendars, setCalendars] = useState([]);
   const revenueNameInputRef = useRef(null); // Ref para o input de nome da próxima receita
   const revenueValueInputRef = useRef(null); // Ref para o input de valor da receita atual
   const expenseNameInputRef = useRef(null); // Ref para o input de nome da próxima despesa
@@ -43,7 +45,23 @@ const IncomePage = () => {
     String(new Date().getFullYear())
   );
 
-  const addExpense = async (name, value) => {
+  useEffect(() => {
+    fetchSavedCalendars()
+      .then(setCalendars)
+      .catch(() => setCalendars([]));
+  }, []);
+
+  const enabledCalendars = calendars.filter((cal) => cal.enabled);
+
+  // Lançamento sem calendário = "Geral"
+  const calendarLabel = (calendarId) => {
+    if (!calendarId) return "Geral";
+    const cal = calendars.find((c) => c.calendar_id === calendarId);
+    if (!cal) return "Calendário removido";
+    return cal.enabled ? cal.calendar_name : `${cal.calendar_name} (desabilitado)`;
+  };
+
+  const addExpense = async (name, value, calendarId) => {
     if (name.trim() && selectedMonth && selectedYear) {
       const newExpense = {
         name: name,
@@ -65,6 +83,7 @@ const IncomePage = () => {
               name: newExpense.name,
               value: parseCurrency(newExpense.value) / 100,
               date: formattedDate,
+              calendar_id: calendarId || null,
             }),
           }
         );
@@ -81,7 +100,7 @@ const IncomePage = () => {
     }
   };
 
-  const addRevenue = async (name, value) => {
+  const addRevenue = async (name, value, calendarId) => {
     if (name.trim() && value && selectedMonth && selectedYear) {
       const newRevenue = {
         name: name,
@@ -103,6 +122,7 @@ const IncomePage = () => {
               name: newRevenue.name,
               value: parseCurrency(newRevenue.value) / 100,
               date: formattedDate,
+              calendar_id: calendarId || null,
             }),
           }
         );
@@ -221,11 +241,11 @@ const IncomePage = () => {
 
   const handleClick = async () => {
     const expensePromises = isAddingExpense.map(async (expense) => {
-      await addExpense(expense.name, expense.value);
+      await addExpense(expense.name, expense.value, expense.calendar_id);
     });
 
     const revenuePromises = isAddingRevenue.map(async (revenue) => {
-      await addRevenue(revenue.name, revenue.value);
+      await addRevenue(revenue.name, revenue.value, revenue.calendar_id);
     });
 
     await Promise.all([...expensePromises, ...revenuePromises]);
@@ -247,12 +267,12 @@ const IncomePage = () => {
     if (e.key === "Enter") {
       const revenuePromises = isAddingRevenue.map(async (revenue) => {
         if (revenue.name.trim() && revenue.value) {
-          await addRevenue(revenue.name, revenue.value);
+          await addRevenue(revenue.name, revenue.value, revenue.calendar_id);
         }
       });
 
       await Promise.all(revenuePromises);
-      setIsAddingRevenue([{ name: "", value: "" }]);
+      setIsAddingRevenue([{ name: "", value: "", calendar_id: "" }]);
 
       // Focar no próximo input de nome da receita
       if (revenueNameInputRef.current) {
@@ -273,12 +293,12 @@ const IncomePage = () => {
     if (e.key === "Enter") {
       const expensePromises = isAddingExpense.map(async (expense) => {
         if (expense.name.trim() && expense.value) {
-          await addExpense(expense.name, expense.value);
+          await addExpense(expense.name, expense.value, expense.calendar_id);
         }
       });
 
       await Promise.all(expensePromises);
-      setIsAddingExpense([{ name: "", value: "" }]);
+      setIsAddingExpense([{ name: "", value: "", calendar_id: "" }]);
 
       // Focar no próximo input de nome da despesa
       if (expenseNameInputRef.current) {
@@ -374,11 +394,11 @@ const IncomePage = () => {
   };
 
   const toggleAddRevenue = () => {
-    setIsAddingRevenue((prev) => [...prev, { name: "", value: "" }]);
+    setIsAddingRevenue((prev) => [...prev, { name: "", value: "", calendar_id: "" }]);
   };
 
   const toggleAddExpense = () => {
-    setIsAddingExpense((prev) => [...prev, { name: "", value: "" }]);
+    setIsAddingExpense((prev) => [...prev, { name: "", value: "", calendar_id: "" }]);
   };
 
   const updateAddingRevenue = (index, field, value) => {
@@ -406,6 +426,10 @@ const IncomePage = () => {
     "w-full min-w-0 rounded-md border border-cinza6 bg-bg1 p-2 text-gray-700 focus:border-cinza6 focus:outline focus:ring";
   const deleteButtonClass =
     "shrink-0 rounded-full p-2 text-primaria hover:bg-clara3 active:opacity-50";
+  const calendarSelectClass =
+    "col-span-2 h-9 w-full min-w-0 rounded-md border border-cinza6 bg-bg1 px-2 text-sm text-gray-700 focus:border-cinza6 focus:outline focus:ring";
+  const calendarBadgeClass =
+    "mt-1 block w-fit max-w-full truncate rounded-full bg-clara3 px-2 py-0.5 text-xs font-medium text-primaria";
   const addButtonClass =
     "mt-4 flex items-center rounded-md px-1 py-1 transition-shadow hover:bg-clara3 active:opacity-50";
 
@@ -466,6 +490,11 @@ const IncomePage = () => {
               <div key={index} className={itemRowClass}>
                 <div className="min-w-0 flex-1 cursor-default break-words text-gray-700">
                   {revenue.name}
+                  {calendars.length > 0 && (
+                    <span className={calendarBadgeClass}>
+                      {calendarLabel(revenue.calendar_id)}
+                    </span>
+                  )}
                 </div>
                 <div className={valueBoxClass}>
                   {formatCurrency(revenue.value)}
@@ -507,6 +536,23 @@ const IncomePage = () => {
                   ref={revenueValueInputRef}
                   className={newInputClass}
                 />
+                {enabledCalendars.length > 0 && (
+                  <select
+                    aria-label="Calendário"
+                    value={revenue.calendar_id}
+                    onChange={(e) =>
+                      updateAddingRevenue(index, "calendar_id", e.target.value)
+                    }
+                    className={calendarSelectClass}
+                  >
+                    <option value="">Geral (sem calendário)</option>
+                    {enabledCalendars.map((cal) => (
+                      <option key={cal.calendar_id} value={cal.calendar_id}>
+                        {cal.calendar_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             ))}
             <button onClick={toggleAddRevenue} className={addButtonClass}>
@@ -522,6 +568,11 @@ const IncomePage = () => {
               <div key={index} className={itemRowClass}>
                 <div className="min-w-0 flex-1 cursor-default break-words text-gray-700">
                   {expense.name}
+                  {calendars.length > 0 && (
+                    <span className={calendarBadgeClass}>
+                      {calendarLabel(expense.calendar_id)}
+                    </span>
+                  )}
                 </div>
                 <div className={valueBoxClass}>
                   {formatCurrency(expense.value)}
@@ -563,6 +614,23 @@ const IncomePage = () => {
                   ref={expenseValueInputRef}
                   className={newInputClass}
                 />
+                {enabledCalendars.length > 0 && (
+                  <select
+                    aria-label="Calendário"
+                    value={expense.calendar_id}
+                    onChange={(e) =>
+                      updateAddingExpense(index, "calendar_id", e.target.value)
+                    }
+                    className={calendarSelectClass}
+                  >
+                    <option value="">Geral (sem calendário)</option>
+                    {enabledCalendars.map((cal) => (
+                      <option key={cal.calendar_id} value={cal.calendar_id}>
+                        {cal.calendar_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
             ))}
             <button onClick={toggleAddExpense} className={addButtonClass}>
