@@ -21,6 +21,7 @@ router.get("/unmatched-patients", verifyToken, unmatchedPatientsController.getUn
 router.delete("/unmatched-patients/:google_event_id", eventController.deleteUnmatchedEvent);
 router.get("/calendars", eventController.listCalendars);
 router.get("/calendars/saved", eventController.listSavedCalendars);
+router.delete("/calendars/:calendarId", eventController.deleteSavedCalendar);
 router.post("/linkCustomerToEvent", customerController.linkCustomerToEvent);
 router.delete(
   "/cancel/:google_event_id/:calendarId",

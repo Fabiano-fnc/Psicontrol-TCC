@@ -5,7 +5,7 @@ const {
 } = require("../services/eventService");
 const { syncGoogleCalendarWithDatabase } = require("./authController");
 const { oauth2Client } = require("../config/oauth2");
-const { Event, Calendar } = require("../models");
+const { Event, Calendar, Customer, income } = require("../models");
 
 const authenticateClient = async () => {
   if (!oauth2Client.credentials || !oauth2Client.credentials.access_token) {
@@ -212,7 +212,7 @@ exports.listCalendars = async (req, res) => {
   const userId = req.user.user_id;
   const dbCalendars = await Calendar.findAll({
     where: { user_id: userId },
-    attributes: ["calendar_id", "enabled"],
+    attributes: ["calendar_id", "calendar_name", "enabled"],
   });
 
   const dbCalendarsMap = dbCalendars.reduce((acc, cal) => {
@@ -226,7 +226,48 @@ exports.listCalendars = async (req, res) => {
     enabled: dbCalendarsMap[cal.id] || false,
   }));
 
-  res.status(200).json(mergedCalendars);
+  // Agendas salvas que não existem mais no Google (apagadas ou de outra conta):
+  // continuam na lista para o usuário poder desativar ou remover
+  const googleIds = new Set(googleCalendars.map((cal) => cal.id));
+  const missingCalendars = dbCalendars
+    .filter((cal) => !googleIds.has(cal.calendar_id))
+    .map((cal) => ({
+      calendar_id: cal.calendar_id,
+      calendar_name: cal.calendar_name,
+      enabled: cal.enabled,
+      missing: true,
+    }));
+
+  res.status(200).json([...mergedCalendars, ...missingCalendars]);
+};
+
+// Remove uma agenda salva; só é permitido quando nada depende dela
+exports.deleteSavedCalendar = async (req, res) => {
+  const userId = req.user.user_id;
+  const { calendarId } = req.params;
+
+  const calendar = await Calendar.findOne({
+    where: { user_id: userId, calendar_id: calendarId },
+  });
+  if (!calendar) {
+    return res.status(404).json({ error: "Agenda não encontrada." });
+  }
+
+  const where = { user_id: userId, calendar_id: calendarId };
+  const [customers, entries, events] = await Promise.all([
+    Customer.count({ where }),
+    income.count({ where }),
+    Event.count({ where }),
+  ]);
+  if (customers + entries + events > 0) {
+    return res.status(409).json({
+      error:
+        "Esta agenda tem pacientes, lançamentos ou eventos vinculados. Desative-a em vez de remover.",
+    });
+  }
+
+  await calendar.destroy();
+  res.status(200).json({ message: "Agenda removida." });
 };
 
 // Calendários do usuário já salvos no banco (sem consultar o Google)
