@@ -362,8 +362,11 @@ const CustomersPage = () => {
                     >
                       <button
                         onClick={() => toggleDropdown(customer.customer_id)}
-                        className="flex items-center rounded-full p-2 hover:bg-clara3"
+                        className={`flex items-center rounded-full p-2 transition hover:bg-clara3 ${
+                          activeDropdown === customer.customer_id ? "bg-clara3" : ""
+                        }`}
                         aria-label="Ações do paciente"
+                        aria-expanded={activeDropdown === customer.customer_id}
                       >
                         <HamburguerIcon />
                       </button>

@@ -8,6 +8,7 @@ const REPEAT_OPTIONS = [
   { id: "biweekly", label: "A cada 2 semanas", step: 14 },
 ];
 const DURATIONS = [30, 40, 45, 50, 60, 90];
+const OCCURRENCES = Array.from({ length: 26 }, (_, i) => i + 1);
 const WEEKDAYS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -130,7 +131,7 @@ const InlineCalendar = ({ value, onChange, highlighted = [] }) => {
 };
 
 const fieldClass =
-  "h-11 w-full rounded-xl border border-cinza6 bg-bg1 px-3 text-sm text-texto1 transition focus:border-primaria/60 focus:outline-none focus:ring-4 focus:ring-clara3";
+  "h-11 w-full rounded-xl border border-cinza6 bg-bg1 px-3 text-base text-texto1 transition sm:text-sm focus:border-primaria/60 focus:outline-none focus:ring-4 focus:ring-clara3";
 const labelClass = "mb-1 ml-1 block text-sm font-semibold text-texto2";
 
 // Agenda as consultas do paciente no Google Agenda (na agenda dele)
@@ -240,7 +241,7 @@ const ScheduleConsultations = ({ customer, justCreated = false, onClose, onSched
                 aria-label="Hora"
                 value={hour}
                 onChange={(e) => setHour(e.target.value)}
-                className={`${fieldClass} h-12 text-base`}
+                className={`${fieldClass} h-12 sm:text-base`}
               >
                 <option value="">Hora</option>
                 {HOURS.map((h) => (
@@ -254,7 +255,7 @@ const ScheduleConsultations = ({ customer, justCreated = false, onClose, onSched
                 aria-label="Minutos"
                 value={minute}
                 onChange={(e) => setMinute(e.target.value)}
-                className={`${fieldClass} h-12 text-base`}
+                className={`${fieldClass} h-12 sm:text-base`}
               >
                 {MINUTES.map((m) => (
                   <option key={m} value={m}>
@@ -305,19 +306,22 @@ const ScheduleConsultations = ({ customer, justCreated = false, onClose, onSched
           </div>
 
           {step > 0 && (
-            <div className="flex items-center gap-3">
-              <label htmlFor="schedule-count" className="text-sm font-semibold text-texto2">
+            <div>
+              <label htmlFor="schedule-count" className={labelClass}>
                 Quantas consultas
               </label>
-              <input
+              <select
                 id="schedule-count"
-                type="number"
-                min={1}
-                max={26}
                 value={occurrences}
-                onChange={(e) => setOccurrences(e.target.value)}
-                className={`${fieldClass} w-20`}
-              />
+                onChange={(e) => setOccurrences(Number(e.target.value))}
+                className={fieldClass}
+              >
+                {OCCURRENCES.map((n) => (
+                  <option key={n} value={n}>
+                    {n} {n === 1 ? "consulta" : "consultas"}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
