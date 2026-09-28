@@ -301,6 +301,15 @@ const DashBoard = () => {
     fetchBillingRecords(selectedMonth, formattedYear);
   };
 
+  // Mês e ano juntos: uma única busca, sem usar o valor antigo do outro campo
+  const handlePeriodChange = (month, year) => {
+    const formattedMonth = String(month).padStart(2, "0");
+    const formattedYear = String(year);
+    setSelectedMonth(formattedMonth);
+    setSelectedYear(formattedYear);
+    fetchBillingRecords(formattedMonth, formattedYear);
+  };
+
   useEffect(() => {
     setPatients([]);
     fetchBillingRecords(selectedMonth, selectedYear);
@@ -561,9 +570,10 @@ const DashBoard = () => {
             <Months
               onMonthChange={handleMonthChange}
               onYearChange={handleYearChange}
+              onPeriodChange={handlePeriodChange}
               selectedMonth={selectedMonth}
               selectedYear={selectedYear}
-              wrapperClassName="col-span-2 z-20 lg:flex-1 lg:self-center"
+              wrapperClassName="col-span-2 z-20 lg:w-[216px] lg:shrink-0"
             />
             <CardDashBoard
               title="Nº de Consultas"

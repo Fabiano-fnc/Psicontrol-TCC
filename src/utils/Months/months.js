@@ -1,138 +1,187 @@
-import { useState } from "react";
-import { useModal } from "../Modal/useModal";
-import { VerifyIcon, CheckIcon, SetaIcon } from "../../icons/icons";
+import { useCallback, useRef, useState } from "react";
+import { useOutsideClick } from "../OutsideClick/useOutsideClick";
+import { useEscapeKey } from "../Modal/useDismiss";
 
+const monthsInRange = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
+const monthsInRangeShort = [
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
+];
+
+const Icon = ({ d, className = "h-5 w-5" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d={d} />
+  </svg>
+);
+
+const calendarPath =
+  "M8 2v3M16 2v3M3.5 9h17M5 4.5h14A1.5 1.5 0 0 1 20.5 6v13a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z";
+
+// onPeriodChange(mês, ano) troca os dois de uma vez; sem ele, cai em onYearChange/onMonthChange
 export const Months = ({
   onMonthChange,
   onYearChange,
+  onPeriodChange,
   selectedMonth,
   selectedYear,
   wrapperClassName = "flex-1 ml-3 top-3 md:z-30",
 }) => {
-  const { isModalOpen, openModal, closeModal } = useModal();
-  const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
+  const [isOpen, setIsOpen] = useState(false);
+  const [viewYear, setViewYear] = useState(Number(selectedYear));
+  const wrapperRef = useRef(null);
 
-  const [showingMonths, setShowingMonths] = useState(true);
+  const today = new Date();
+  const currentMonth = today.getMonth() + 1;
+  const currentYear = today.getFullYear();
+  const month = Number(selectedMonth);
+  const year = Number(selectedYear);
 
-  const getYearsRange = () => {
-    const years = [];
-    for (let i = currentYear - 5; i <= currentYear + 5; i++) {
-      years.push(i);
+  const close = useCallback(() => setIsOpen(false), []);
+  useOutsideClick(wrapperRef, close);
+  useEscapeKey(isOpen, close);
+
+  const toggle = () => {
+    if (!isOpen) setViewYear(year);
+    setIsOpen(!isOpen);
+  };
+
+  const selectPeriod = (newMonth, newYear) => {
+    if (onPeriodChange) {
+      onPeriodChange(newMonth, newYear);
+    } else {
+      if (newYear !== year) onYearChange(newYear);
+      onMonthChange(newMonth);
     }
-    return years;
+    close();
   };
 
-  const monthsInRange = [
-    "Janeiro",
-    "Fevereiro",
-    "Março",
-    "Abril",
-    "Maio",
-    "Junho",
-    "Julho",
-    "Agosto",
-    "Setembro",
-    "Outubro",
-    "Novembro",
-    "Dezembro",
-  ];
-
-  const monthsInRangeShort = [
-    "Jan",
-    "Fev",
-    "Mar",
-    "Abr",
-    "Mai",
-    "Jun",
-    "Jul",
-    "Ago",
-    "Set",
-    "Out",
-    "Nov",
-    "Dez",
-  ];
-
-  const handleMonthClick = (index) => {
-    onMonthChange(index + 1);
-    closeModal(); // Fecha o modal após selecionar o mês
-  };
-
-  const handleYearClick = (year) => {
-    onYearChange(year);
-    setShowingMonths(true); // Mostra os meses após selecionar o ano
-  };
-
-  const toggleModal = () => {
-    isModalOpen ? closeModal() : openModal();
-  };
+  const label = `${monthsInRange[month - 1]}/${String(year).slice(-2)}`;
 
   return (
-    <div className={`relative drop-shadow-monthsShadow active:drop-shadow-addShadow ${wrapperClassName}`}>
+    <div ref={wrapperRef} className={`relative ${wrapperClassName}`}>
       <button
-        onClick={toggleModal}
-        className="w-full md:h-[46px] h-[40px] px-3 bg-primaria active:opacity-80 rounded-[10px] shadow flex justify-between items-center"
+        type="button"
+        onClick={toggle}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        className={`group flex h-full w-full items-center gap-3 rounded-2xl border bg-bg1 px-3 py-2 text-left shadow-card transition hover:border-primaria/40 active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-clara3 ${
+          isOpen ? "border-primaria/60 ring-4 ring-clara3" : "border-cinza9"
+        }`}
       >
-        <div className="flex items-center gap-2">
-          <VerifyIcon />
-          <span className="text-texto4 md:text-[21px] text-[16px] font-medium font-ubuntu tracking-tight">
-            <span className="block md:hidden">{`${monthsInRangeShort[selectedMonth - 1]}/${selectedYear.toString().slice(-2)}`}</span>
-            <span className="hidden md:block">{`${monthsInRange[selectedMonth - 1]}/${selectedYear.toString().slice(-2)}`}</span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primaria to-primariaEscura text-white md:h-10 md:w-10">
+          <Icon d={calendarPath} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-[11px] font-semibold uppercase tracking-wide text-texto3">
+            Período
           </span>
-        </div>
-        <SetaIcon />
+          <span className="block truncate font-ubuntu text-base font-bold tracking-tight text-texto1">
+            {label}
+          </span>
+        </span>
+        <Icon
+          d="m6 9 6 6 6-6"
+          className={`h-5 w-5 shrink-0 text-texto3 transition-transform group-hover:text-primaria ${
+            isOpen ? "rotate-180 text-primaria" : ""
+          }`}
+        />
       </button>
-      {isModalOpen && (
-        <div className="w-[213px] h-[277px] md:w-full max-w-full flex flex-col items-center mt-2 bg-bg1 shadow-lg rounded-2xl border border-[#81a0ae] p-2 absolute z-50">
-          <div className="flex items-center justify-between w-full px-5 py-1 mb-2 border-b border-[#cac4d0]">
+
+      {isOpen && (
+        <div
+          role="dialog"
+          aria-label="Selecionar período"
+          className="absolute left-0 top-full z-50 mt-2 w-[272px] max-w-[calc(100vw-2rem)] animate-toast-in rounded-2xl border border-cinza9 bg-bg1 p-3 shadow-dropShadow"
+        >
+          <div className="mb-3 flex items-center justify-between">
             <button
-              onClick={() => setShowingMonths(true)}
-              className={`text-[#5c5c5c] text-sm font-normal font-openSans tracking-tight hover:text-black ${
-                showingMonths ? "font-bold text-black" : ""
-              }`}
+              type="button"
+              onClick={() => setViewYear(viewYear - 1)}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-texto3 hover:bg-clara4 hover:text-primaria"
+              aria-label="Ano anterior"
             >
-              {showingMonths ? "Meses" : monthsInRange[selectedMonth - 1]}
+              <Icon d="m15 18-6-6 6-6" className="h-4 w-4" />
             </button>
+            <span className="font-ubuntu text-base font-bold tracking-tight text-texto1">
+              {viewYear}
+            </span>
             <button
-              onClick={() => setShowingMonths(false)}
-              className={`text-[#5c5c5c] text-sm font-normal font-openSans tracking-tight hover:text-black ${
-                !showingMonths ? "font-bold text-black" : ""
-              }`}
+              type="button"
+              onClick={() => setViewYear(viewYear + 1)}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-texto3 hover:bg-clara4 hover:text-primaria"
+              aria-label="Próximo ano"
             >
-              {selectedYear}
+              <Icon d="m9 18 6-6-6-6" className="h-4 w-4" />
             </button>
           </div>
-          <div className="flex flex-col w-full overflow-y-auto max-h-60">
-            {showingMonths
-              ? monthsInRange.map((month, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleMonthClick(index)}
-                    className={`w-full px-3 py-2 text-left rounded-md hover:bg-d_medio3 ${
-                      selectedMonth - 1 === index ? "flex items-center" : ""
-                    }`}
-                  >
-                    {selectedMonth - 1 === index && <CheckIcon />}
-                    <span className="block md:hidden  ">
-                      {monthsInRange[index]}
-                    </span>
-                    <span className="hidden md:block ">{month}</span>
-                  </button>
-                ))
-              : getYearsRange().map((year) => (
-                  <button
-                    key={year}
-                    onClick={() => handleYearClick(year)}
-                    className={`w-full px-3 py-2 text-left rounded-md hover:bg-blue-100 ${
-                      selectedYear === year
-                        ? "bg-blue-200 flex items-center"
-                        : ""
-                    }`}
-                  >
-                    {selectedYear === year && <CheckIcon />}
-                    {year}
-                  </button>
-                ))}
+
+          <div className="grid grid-cols-3 gap-1.5">
+            {monthsInRangeShort.map((name, index) => {
+              const isSelected = index + 1 === month && viewYear === year;
+              const isCurrent =
+                index + 1 === currentMonth && viewYear === currentYear;
+              return (
+                <button
+                  key={name}
+                  type="button"
+                  onClick={() => selectPeriod(index + 1, viewYear)}
+                  aria-pressed={isSelected}
+                  title={monthsInRange[index]}
+                  className={`h-10 rounded-xl text-sm font-semibold transition ${
+                    isSelected
+                      ? "bg-gradient-to-br from-primaria to-primariaEscura text-white shadow-card"
+                      : isCurrent
+                        ? "bg-clara4 text-primaria ring-1 ring-inset ring-primaria/40 hover:bg-clara3"
+                        : "text-texto2 hover:bg-clara4 hover:text-primaria"
+                  }`}
+                >
+                  {name}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="mt-3 flex justify-end border-t border-cinza9 pt-2">
+            <button
+              type="button"
+              onClick={() => selectPeriod(currentMonth, currentYear)}
+              className="rounded-full px-3 py-1 text-sm font-semibold text-primaria hover:bg-clara4"
+            >
+              Mês atual
+            </button>
           </div>
         </div>
       )}

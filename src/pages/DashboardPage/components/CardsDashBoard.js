@@ -13,7 +13,7 @@ const icons = {
 const CardDashBoard = ({ title, value, icon, destaque = false }) => {
   return (
     <div
-      className={`relative flex min-w-0 items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 shadow-card lg:flex-1 ${
+      className={`relative flex min-w-0 items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 shadow-card lg:px-3 2xl:px-4 lg:flex-1 ${
         destaque
           ? "bg-gradient-to-br from-primaria to-primariaEscura text-white"
           : "border border-cinza9 bg-bg1 text-texto1"

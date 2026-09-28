@@ -471,7 +471,7 @@ const IncomePage = () => {
             onYearChange={handleYearChange}
             selectedMonth={selectedMonth}
             selectedYear={selectedYear}
-            wrapperClassName="z-20 w-full sm:w-[190px]"
+            wrapperClassName="z-20 w-full sm:w-[230px]"
           />
 
           <button
