@@ -6,7 +6,6 @@ import "../../index.css";
 import DeletePatientModal from "./components/DeletePatientModal";
 import DropDownDashBoard from "./components/DropDownDashBoard";
 import SearchBarDashBoard from "./components/SearchBarDashBoard";
-import { HamburguerIcon } from "../../icons/icons";
 import {
   ShowVinculateToast,
   showDeleteToast,
@@ -32,6 +31,15 @@ const StatusBadge = ({ tone, children }) => (
   >
     {children}
   </span>
+);
+
+// Três pontos verticais do botão de ações
+const MoreIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5" aria-hidden="true">
+    <circle cx="12" cy="5" r="1.8" />
+    <circle cx="12" cy="12" r="1.8" />
+    <circle cx="12" cy="19" r="1.8" />
+  </svg>
 );
 
 const DashBoard = () => {
@@ -84,6 +92,8 @@ const DashBoard = () => {
     setIsDropdownOpenPatients(null);
     setIsDropdownOpen(false);
   };
+
+  useEscapeKey(isDropdownOpenPatients !== null || isDropdownOpen, closeMenus);
 
   useEffect(() => {
     if (isDropdownOpenPatients === null && !isDropdownOpen) return;
@@ -170,7 +180,7 @@ const DashBoard = () => {
   };
 
   const toggleDropdownPatients = (eventIndex, patient, clickEvent) => {
-    setMenuPosition(getMenuPosition(clickEvent.currentTarget, 210));
+    setMenuPosition(getMenuPosition(clickEvent.currentTarget, 220));
     setIsDropdownOpen(false);
     if (patient && patient.customer_id) {
       setSelectedPatient(patient);
@@ -184,7 +194,7 @@ const DashBoard = () => {
   };
 
   const toggleDropdown = (eventIndex, clickEvent) => {
-    setMenuPosition(getMenuPosition(clickEvent.currentTarget, 130));
+    setMenuPosition(getMenuPosition(clickEvent.currentTarget, 170));
     setIsDropdownOpenPatients(null);
     const event = unmatchedPatients[eventIndex];
     if (!event) {
@@ -552,6 +562,8 @@ const DashBoard = () => {
     }
   };
 
+  const actionButtonClass =
+    "flex h-9 w-9 cursor-pointer items-center justify-center rounded-full text-texto3 transition hover:bg-clara3 hover:text-primaria focus:outline-none focus-visible:ring-4 focus-visible:ring-clara3";
   const thClass =
     "whitespace-nowrap border-b border-b-cinza9 bg-clara4 px-3 md:px-4 py-3 text-center align-middle text-xs font-semibold uppercase tracking-wide text-texto3";
   const tdClass =
@@ -696,13 +708,18 @@ const DashBoard = () => {
                       <td className={tdClass}>
                         <button
                           data-menu
-                          className="cursor-pointer rounded-full p-2 hover:bg-clara3"
+                          className={`${actionButtonClass} mx-auto ${
+                            isDropdownOpenPatients === index
+                              ? "bg-clara3 text-primaria"
+                              : ""
+                          }`}
                           aria-label="Ações do paciente"
+                          aria-expanded={isDropdownOpenPatients === index}
                           onClick={(e) =>
                             toggleDropdownPatients(index, patient, e)
                           }
                         >
-                          <HamburguerIcon />
+                          <MoreIcon />
                         </button>
                       </td>
                     </tr>
@@ -725,6 +742,10 @@ const DashBoard = () => {
             filteredPatients[isDropdownOpenPatients] && (
               <div data-menu className="fixed z-40" style={menuPosition}>
                 <DropDownDashActions
+                  patientName={
+                    filteredPatients[isDropdownOpenPatients].Customer
+                      ?.customer_name
+                  }
                   onOpenModal={() => {
                     closeMenus();
                     handleSendWhatsApp(
@@ -783,11 +804,16 @@ const DashBoard = () => {
                           <span className="break-words">{event.name}</span>
                           <button
                             data-menu
-                            className="shrink-0 cursor-pointer rounded-full p-2 hover:bg-clara3"
+                            className={`${actionButtonClass} shrink-0 ${
+                              isDropdownOpen && selectedEvent === index
+                                ? "bg-clara3 text-primaria"
+                                : ""
+                            }`}
                             aria-label="Ações do evento"
+                            aria-expanded={isDropdownOpen && selectedEvent === index}
                             onClick={(e) => toggleDropdown(index, e)}
                           >
-                            <HamburguerIcon />
+                            <MoreIcon />
                           </button>
                         </td>
                       </tr>
@@ -807,6 +833,7 @@ const DashBoard = () => {
           {isDropdownOpen && unmatchedPatients[selectedEvent] && (
             <div data-menu className="fixed z-40" style={menuPosition}>
               <DropDownDashBoard
+                eventName={unmatchedPatients[selectedEvent].name}
                 onVincular={() =>
                   handleVinculatePatient(unmatchedPatients[selectedEvent])
                 }
