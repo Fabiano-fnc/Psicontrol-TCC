@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const dashBoardController = require("../controllers/dashBoardController");
+const dashboardOverviewController = require("../controllers/dashboardOverviewController");
 
 router.get("/billing-records", dashBoardController.getBillingRecordsByMonthAndYear);
+router.get("/overview", dashboardOverviewController.getOverview);
 router.post(
     "/update-partial-payment",
     dashBoardController.updatePartialPayment
