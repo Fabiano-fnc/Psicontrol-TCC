@@ -3,6 +3,7 @@ const {
   CustomersBillingRecords,
   income,
   Calendar,
+  Event,
 } = require("../models");
 const { Op } = require("sequelize");
 
@@ -148,4 +149,57 @@ exports.getOverview = async (req, res) => {
       profit: round(h.profit),
     })),
   });
+};
+
+const CANCELLED_STATUSES = ["cancelado", "cancelled"];
+
+// Horários das consultas do mês por paciente:
+// { [customer_id]: { times: ["14:00", ...], timed: 2 } } — times sem repetir e
+// em ordem; timed = quantas consultas têm horário (as de dia inteiro não têm)
+exports.getConsultationTimes = async (req, res) => {
+  const userId = req.user.user_id;
+  const month = Number(req.query.month);
+  const year = Number(req.query.year);
+
+  if (!Number.isInteger(month) || month < 1 || month > 12 ||
+      !Number.isInteger(year) || year < 2000 || year > 2100) {
+    return res
+      .status(400)
+      .json({ error: "Informe 'month' (1-12) e 'year' válidos." });
+  }
+
+  const lastDay = new Date(year, month, 0).getDate();
+  const events = await Event.findAll({
+    where: {
+      user_id: userId,
+      customer_id: { [Op.ne]: null },
+      start_time: { [Op.ne]: null },
+      date: {
+        [Op.between]: [
+          `${year}-${pad(month)}-01`,
+          `${year}-${pad(month)}-${pad(lastDay)}`,
+        ],
+      },
+      status: { [Op.or]: [{ [Op.notIn]: CANCELLED_STATUSES }, null] },
+    },
+    attributes: ["customer_id", "start_time"],
+  });
+
+  const byCustomer = {};
+  events.forEach(({ customer_id, start_time }) => {
+    if (!byCustomer[customer_id]) {
+      byCustomer[customer_id] = { times: new Set(), timed: 0 };
+    }
+    byCustomer[customer_id].times.add(start_time);
+    byCustomer[customer_id].timed += 1;
+  });
+
+  res.status(200).json(
+    Object.fromEntries(
+      Object.entries(byCustomer).map(([id, { times, timed }]) => [
+        id,
+        { times: [...times].sort(), timed },
+      ])
+    )
+  );
 };

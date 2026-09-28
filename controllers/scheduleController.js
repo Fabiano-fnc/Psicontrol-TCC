@@ -112,6 +112,8 @@ exports.scheduleConsultations = async (req, res) => {
       await Event.create({
         event_name: customer.customer_name,
         date: eventDate,
+        start_time: toWallClock(start).slice(11, 16),
+        end_time: toWallClock(end).slice(11, 16),
         status: "confirmed",
         calendar_id: customer.calendar_id,
         user_id: user.user_id,

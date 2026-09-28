@@ -34,6 +34,15 @@ const Event = sequelize.define(
       type: DataTypes.DATEONLY,
       allowNull: true,
     },
+    // "HH:mm"; null em eventos de dia inteiro
+    start_time: {
+      type: DataTypes.STRING(5),
+      allowNull: true,
+    },
+    end_time: {
+      type: DataTypes.STRING(5),
+      allowNull: true,
+    },
     google_event_id: {
       type: DataTypes.STRING,
       allowNull: true,

@@ -5,6 +5,7 @@ const dashboardOverviewController = require("../controllers/dashboardOverviewCon
 
 router.get("/billing-records", dashBoardController.getBillingRecordsByMonthAndYear);
 router.get("/overview", dashboardOverviewController.getOverview);
+router.get("/consultation-times", dashboardOverviewController.getConsultationTimes);
 router.post(
     "/update-partial-payment",
     dashBoardController.updatePartialPayment

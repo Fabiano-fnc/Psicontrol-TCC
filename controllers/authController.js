@@ -138,19 +138,14 @@ const syncGoogleCalendarWithDatabase = async (userId, accessToken) => {
           endTime = null;
 
         if (event.start && event.start.dateTime) {
-          const dateTime = event.start.dateTime;
-          startDate = format(parseISO(dateTime), "yyyy-MM-dd");
-          startTime = dateTime.split("T")[1].split(":").slice(0, 2).join(":");
-
-          if (event.end && event.end.dateTime) {
-            endTime = event.end.dateTime
-              .split("T")[1]
-              .split(":")
-              .slice(0, 2)
-              .join(":");
-          } else {
-            endTime = startTime;
-          }
+          // start.dateTime chega em UTC (toISOString em fetchGoogleCalendarEvents):
+          // data e hora saem no fuso local, senão 16:00 de Brasília viraria 19:00
+          const start = parseISO(event.start.dateTime);
+          startDate = format(start, "yyyy-MM-dd");
+          startTime = format(start, "HH:mm");
+          endTime = event.end?.dateTime
+            ? format(parseISO(event.end.dateTime), "HH:mm")
+            : startTime;
         } else if (event.start && event.start.date) {
           startDate = event.start.date;
         }
