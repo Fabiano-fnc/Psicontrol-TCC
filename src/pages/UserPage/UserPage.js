@@ -1,7 +1,6 @@
 import { notify } from "../../utils/notification/notify";
 import { closeOnBackdrop, useEscapeKey } from "../../utils/Modal/useDismiss";
-import React, { useState, useEffect } from "react";
-import { CheckMessage, EditIcon, RefreshIcon } from "../../icons/icons";
+import React, { useState, useEffect, useRef } from "react";
 import { showAlteredToast } from "./components/toastUserPage";
 import { showErrorToast } from "../../utils/notification/toastify";
 import {
@@ -10,6 +9,64 @@ import {
   formatCrp,
   formatPhone,
 } from "../../utils/format/format";
+
+const icons = {
+  edit: "M4 20h4L18.5 9.5a2.1 2.1 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4",
+  refresh: "M20 11a8 8 0 0 0-14.9-3.9M4 5v4h4M4 13a8 8 0 0 0 14.9 3.9M20 19v-4h-4",
+  calendar:
+    "M8 2v3M16 2v3M3.5 9h17M5 4.5h14A1.5 1.5 0 0 1 20.5 6v13a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z",
+  message:
+    "M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4v-4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1ZM8 10h8M8 13h5",
+  check: "m5 12 5 5 9-10",
+  image:
+    "M4 5h16v14H4zM4 16l5-5 4 4 2-2 5 5M15 9.5a1 1 0 1 0 0-.01",
+  upload: "M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M12 4v12M7 9l5-5 5 5",
+};
+
+const Icon = ({ d, className = "h-5 w-5" }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    aria-hidden="true"
+  >
+    <path d={d} />
+  </svg>
+);
+
+const GoogleIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
+    <path fill="#4285F4" d="M22.6 12.2c0-.8-.1-1.5-.2-2.2H12v4.2h5.9a5 5 0 0 1-2.2 3.3v2.7h3.6c2.1-1.9 3.3-4.8 3.3-8Z" />
+    <path fill="#34A853" d="M12 23c3 0 5.5-1 7.3-2.7l-3.6-2.7c-1 .7-2.2 1.1-3.7 1.1-2.9 0-5.3-1.9-6.2-4.5H2.1v2.8A11 11 0 0 0 12 23Z" />
+    <path fill="#FBBC05" d="M5.8 14.2a6.6 6.6 0 0 1 0-4.3V7.1H2.1a11 11 0 0 0 0 9.9l3.7-2.8Z" />
+    <path fill="#EA4335" d="M12 5.4c1.6 0 3.1.6 4.2 1.7l3.2-3.2A11 11 0 0 0 2.1 7.1l3.7 2.8C6.7 7.3 9.1 5.4 12 5.4Z" />
+  </svg>
+);
+
+// Variáveis que o backend preenche (Handlebars) ao montar a mensagem de cada paciente
+const messageVariables = [
+  { key: "nome", label: "Nome", example: "Maria Silva" },
+  { key: "mes", label: "Mês", example: "setembro" },
+  { key: "dias", label: "Dias", example: "04, 11 e 18" },
+  { key: "valor_total", label: "Valor total", example: "450,00" },
+  { key: "clinic_name", label: "Clínica", example: "Consultório" },
+];
+
+const renderMessagePreview = (message, clinicName) =>
+  messageVariables.reduce(
+    (text, variable) =>
+      text.replace(
+        new RegExp(`{{\\s*${variable.key}\\s*}}`, "g"),
+        variable.key === "clinic_name" && clinicName
+          ? clinicName
+          : variable.example
+      ),
+    message
+  );
 
 const UserPage = () => {
   const [userData, setUserData] = useState({
@@ -29,6 +86,8 @@ const UserPage = () => {
   const [calendars, setCalendars] = useState([]);
   const [selectedCalendars, setSelectedCalendars] = useState(new Set());
   const [isEditingMessage, setIsEditingMessage] = useState(false);
+  const [messageBackup, setMessageBackup] = useState("");
+  const messageRef = useRef(null);
   const [fileName, setFileName] = useState("nomedoarquivo.png");
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const [activeCalendarId, setActiveCalendarId] = useState(null);
@@ -251,6 +310,32 @@ const UserPage = () => {
     }
   };
 
+  const startEditMessage = () => {
+    setMessageBackup(userData.user_message || "");
+    setIsEditingMessage(true);
+  };
+
+  // Insere a variável na posição do cursor
+  const insertVariable = (key) => {
+    const token = `{{${key}}}`;
+    const textarea = messageRef.current;
+    const current = userData.user_message || "";
+    const start = textarea ? textarea.selectionStart : current.length;
+    const end = textarea ? textarea.selectionEnd : current.length;
+    const next = current.slice(0, start) + token + current.slice(end);
+    setUserData((prevData) => ({ ...prevData, user_message: next }));
+    requestAnimationFrame(() => {
+      if (!textarea) return;
+      textarea.focus();
+      textarea.setSelectionRange(start + token.length, start + token.length);
+    });
+  };
+
+  const cancelEditMessage = () => {
+    setUserData((prevData) => ({ ...prevData, user_message: messageBackup }));
+    setIsEditingMessage(false);
+  };
+
   const openModalToChangeAccount = () => {
     setIsModalOpen(true);
   };
@@ -304,14 +389,60 @@ const UserPage = () => {
   useEscapeKey(isConfirmationModalOpen, closeConfirmationModal);
   useEscapeKey(isEditing, closeEdit);
 
-  const infoLineClass = "mt-2 text-base md:text-[17px] font-normal tracking-tight text-texto1";
-  const infoValueClass = "break-words text-texto2";
   const labelClass =
-    "mb-1 block text-sm md:text-base font-normal font-openSans tracking-wide text-texto1";
+    "mb-1.5 ml-1 block text-sm font-semibold text-texto2";
   const inputClass =
-    "h-[50px] w-full rounded-xl border border-cinza6 bg-bg1 px-[16px] text-sm font-normal font-openSans text-texto2 focus:outline-none focus:ring";
-  const boxClass =
-    "min-w-0 rounded-2xl border border-cinza6 bg-bg1 p-5 shadow md:p-6";
+    "h-[46px] w-full rounded-xl border border-cinza6 bg-bg1 px-4 text-sm font-openSans text-texto1 transition focus:border-primaria/60 focus:outline-none focus:ring-4 focus:ring-clara3";
+  const disabledInputClass = `${inputClass} cursor-not-allowed bg-clara4 text-texto3`;
+  const cardClass =
+    "min-w-0 rounded-2xl border border-cinza9 bg-bg1 p-5 shadow-card md:p-6";
+  const pillButtonClass =
+    "inline-flex h-9 items-center gap-2 rounded-full border border-cinza9 bg-bg1 px-4 text-sm font-semibold text-primaria shadow-card transition hover:border-primaria/40 hover:bg-clara4 active:scale-[0.98]";
+  const primaryButtonClass =
+    "inline-flex h-9 items-center gap-2 rounded-full bg-primaria px-4 text-sm font-semibold text-white shadow-card transition hover:opacity-90 active:scale-[0.98]";
+
+  const documentNumber = formatDocument(userData.user_cpf || userData.user_cnpj);
+  const crp = formatCrp(userData.crp_number);
+  const phone = formatPhone(userData.user_phone);
+  const logoUrl =
+    typeof userData.image === "string" && userData.image
+      ? `${process.env.REACT_APP_API_URL}${userData.image}`
+      : null;
+  const enabledCount = calendars.filter((cal) =>
+    selectedCalendars.has(cal.calendar_id)
+  ).length;
+
+  const Info = ({ label, value, className = "" }) => (
+    <div className={`min-w-0 rounded-xl bg-clara4 px-4 py-3 ${className}`}>
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-texto3">
+        {label}
+      </p>
+      <p
+        className={`mt-0.5 [overflow-wrap:anywhere] text-[15px] ${
+          value ? "font-semibold text-texto1" : "italic text-texto3"
+        }`}
+      >
+        {value || "Não informado"}
+      </p>
+    </div>
+  );
+
+  const SectionTitle = ({ icon, title, subtitle, action }) => (
+    <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-clara3 text-primaria">
+          <Icon d={icon} />
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-ubuntu text-lg font-bold tracking-tight text-texto1">
+            {title}
+          </h2>
+          {subtitle && <p className="text-sm text-texto3">{subtitle}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
 
   const ConfirmModal = ({ children, onCancel, onConfirm }) => (
     <div
@@ -342,102 +473,97 @@ const UserPage = () => {
   return (
     <div className="w-full px-4 pb-8 pt-24 md:px-6 md:pt-28">
       <div className="mx-auto flex w-full max-w-[1076px] flex-col gap-4 md:gap-6">
-        {/* Meus dados */}
-        <div className={`relative ${boxClass}`}>
-          <div className="mb-6 flex items-center justify-between gap-4">
-            <h2 className="text-lg md:text-[25px] font-medium font-ubuntu text-primaria">
-              Meus dados
-            </h2>
-            <button
-              onClick={openEdit}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-primaria underline drop-shadow-editShadow hover:bg-clara3"
-            >
-              Editar dados
-              <EditIcon />
-            </button>
+        {/* Perfil */}
+        <div className="overflow-hidden rounded-2xl border border-cinza9 bg-bg1 shadow-card">
+          <div className="relative h-24 overflow-hidden bg-gradient-to-br from-primaria to-primariaEscura md:h-28">
+            <span className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full bg-destaque/40 blur-3xl" />
+            <span className="pointer-events-none absolute -bottom-20 left-1/3 h-40 w-40 rounded-full bg-white/10 blur-2xl" />
           </div>
+          <div className="px-5 pb-5 md:px-6 md:pb-6">
+            <div className="relative -mt-8 flex flex-wrap items-end justify-between gap-4 md:-mt-9">
+              <div className="flex min-w-0 items-end gap-4">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-bg1 bg-gradient-to-br from-destaque to-primaria shadow-card md:h-24 md:w-24">
+                  {userData.photoUrl ? (
+                    <img
+                      src={userData.photoUrl}
+                      alt="Foto de perfil"
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="font-ubuntu text-3xl font-bold text-white md:text-4xl">
+                      {userData.user_name.charAt(0)}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 pb-1">
+                  <h2 className="break-words font-ubuntu text-xl font-bold tracking-tight text-texto1 md:text-2xl">
+                    {userData.user_name}
+                  </h2>
+                  <p className="text-sm text-texto3 [overflow-wrap:anywhere]">
+                    {userData.user_email}
+                  </p>
+                </div>
+              </div>
+              <button onClick={openEdit} className={primaryButtonClass}>
+                <Icon d={icons.edit} className="h-4 w-4" />
+                Editar dados
+              </button>
+            </div>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 md:gap-10">
-            {/* Primeira coluna */}
-            <div className="flex min-w-0 gap-4">
-              <div className="flex aspect-square h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bgM">
-                {userData.photoUrl ? (
-                  <img
-                    src={userData.photoUrl}
-                    alt="Foto de perfil"
-                    className="h-full w-full rounded-full object-cover"
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+              <div className="min-w-0">
+                <h3 className="mb-3 text-sm font-semibold text-texto2">
+                  Meus dados
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <Info label="CPF/CNPJ" value={documentNumber} />
+                  <Info label="CRP" value={crp} />
+                  <Info
+                    label="Telefone"
+                    value={phone}
+                    className="col-span-2"
                   />
-                ) : (
-                  <span className="text-xl font-bold text-white">
-                    {userData.user_name.charAt(0)}
-                  </span>
-                )}
+                </div>
               </div>
 
               <div className="min-w-0">
-                <div className="mb-2 break-words text-xl font-medium font-ubuntu text-black">
-                  {userData.user_name}
+                <h3 className="mb-3 text-sm font-semibold text-texto2">
+                  Dados para recibo
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  <Info
+                    label="Nome/Clínica"
+                    value={userData.clinic_name}
+                    className="col-span-2"
+                  />
+                  <Info label="CPF/CNPJ" value={documentNumber} />
+                  <Info label="CRP" value={crp} />
+                  <div className="col-span-2 flex min-w-0 items-center gap-3 rounded-xl bg-clara4 px-4 py-3">
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-cinza9 bg-bg1 text-texto3">
+                      {logoUrl ? (
+                        <img
+                          src={logoUrl}
+                          alt="Logotipo"
+                          className="h-full w-full object-contain"
+                        />
+                      ) : (
+                        <Icon d={icons.image} />
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-texto3">
+                        Logotipo
+                      </p>
+                      <p
+                        className={`text-[15px] ${
+                          logoUrl ? "font-semibold text-texto1" : "italic text-texto3"
+                        }`}
+                      >
+                        {logoUrl ? "Logotipo enviado" : "Nenhum logotipo enviado"}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className={infoLineClass}>
-                  <span>CPF/CNPJ: </span>
-                  <span className={infoValueClass}>
-                    {formatDocument(userData.user_cpf || userData.user_cnpj)}
-                  </span>
-                </div>
-                <div className={infoLineClass}>
-                  <span>CRP: </span>
-                  <span className={infoValueClass}>
-                    {formatCrp(userData.crp_number)}
-                  </span>
-                </div>
-                <div className={infoLineClass}>
-                  <span>E-mail: </span>
-                  <span className={`${infoValueClass} [overflow-wrap:anywhere]`}>
-                    {userData.user_email}
-                  </span>
-                </div>
-                <div className={infoLineClass}>
-                  <span>Telefone: </span>
-                  <span className={infoValueClass}>
-                    {formatPhone(userData.user_phone)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Segunda coluna */}
-            <div className="min-w-0 border-t border-cinza9 pt-6 md:border-t-0 md:pt-0">
-              <div className="mb-2 text-xl font-medium font-ubuntu text-black">
-                Dados para recibo
-              </div>
-              <div className={infoLineClass}>
-                <span>Nome/Clínica: </span>
-                <span className={infoValueClass}>{userData.clinic_name}</span>
-              </div>
-              <div className={infoLineClass}>
-                <span>CPF/CNPJ: </span>
-                <span className={infoValueClass}>
-                  {formatDocument(userData.user_cpf || userData.user_cnpj)}
-                </span>
-              </div>
-              <div className={infoLineClass}>
-                <span>CRP: </span>
-                <span className={infoValueClass}>
-                    {formatCrp(userData.crp_number)}
-                  </span>
-              </div>
-              <div className={infoLineClass}>
-                <span>Logo: </span>
-                <span className={`${infoValueClass} break-all`}>
-                  {userData.image
-                    ? userData.image instanceof File
-                      ? userData.image.name
-                      : typeof userData.image === "string" &&
-                        userData.image.includes("/")
-                      ? userData.image.split("/").pop()
-                      : userData.image
-                    : "(Imagem não carregada)"}
-                </span>
               </div>
             </div>
           </div>
@@ -445,113 +571,183 @@ const UserPage = () => {
 
         <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
           {/* Minhas agendas */}
-          <div className={boxClass}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-lg md:text-[20px] font-medium text-primaria">
-                Minhas agendas
-              </h3>
+          <div className={cardClass}>
+            <SectionTitle
+              icon={icons.calendar}
+              title="Minhas agendas"
+              subtitle="Só as agendas ativas entram no dashboard"
+            />
+
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-cinza9 px-4 py-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-bg1 shadow-card">
+                  <GoogleIcon />
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-texto1">
+                    {userData.user_name}
+                  </p>
+                  <p className="truncate text-xs text-texto3">
+                    {userData.user_email}
+                  </p>
+                </div>
+              </div>
               <button
                 onClick={openModalToChangeAccount}
-                className="flex items-center gap-2 rounded-md px-2 py-1 text-sm text-primaria underline drop-shadow-editShadow hover:bg-clara3"
+                className={pillButtonClass}
               >
-                Trocar de conta
-                <RefreshIcon />
+                <Icon d={icons.refresh} className="h-4 w-4" />
+                Trocar conta
               </button>
             </div>
 
-            <div className="mt-6 md:px-4">
-              <p className="break-words font-semibold">{userData.user_name}</p>
-              <p className="text-texto3 [overflow-wrap:anywhere]">
-                <span className="text-texto2">E-mail:</span>{" "}
-                {userData.user_email}
-              </p>
-
-              <h4 className="mt-6 text-lg font-medium text-texto1">
-                Agendas sincronizadas
-              </h4>
-
-              <div className="mt-3 max-h-[160px] space-y-4 overflow-y-auto pr-2">
-                {calendars.map((calendar) => (
-                  <label
-                    key={calendar.calendar_id}
-                    className="flex cursor-pointer items-center gap-3"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedCalendars.has(calendar.calendar_id)}
-                      onChange={() =>
-                        openConfirmationModal(calendar.calendar_id)
-                      }
-                      className={`h-5 w-5 shrink-0 cursor-pointer appearance-none rounded-full border-2 transition-colors ${
-                        selectedCalendars.has(calendar.calendar_id)
-                          ? "border-primaria bg-primaria shadow-inner"
-                          : "border-gray-300 bg-white opacity-50"
-                      }`}
-                      style={{
-                        boxShadow: selectedCalendars.has(calendar.calendar_id)
-                          ? "inset 0 0 0 3px white"
-                          : "none",
-                      }}
-                    />
-                    <span
-                      className={`min-w-0 break-words font-medium ${
-                        selectedCalendars.has(calendar.calendar_id)
-                          ? "text-texto2"
-                          : "text-gray-500 opacity-50"
-                      }`}
-                    >
-                      {calendar.calendar_name}
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Mensagem de cobrança */}
-          <div className={`flex flex-col ${boxClass}`}>
-            <div className="mb-4 flex items-center justify-between gap-2">
-              <h3 className="text-lg md:text-[20px] font-medium text-primaria">
-                Mensagem de cobrança
+            <div className="mt-5 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-texto2">
+                Agendas do Google
               </h3>
-              {isEditingMessage ? (
-                <button
-                  onClick={saveMessage}
-                  className="rounded-full p-2 text-sm text-primaria hover:bg-clara3"
-                  aria-label="Salvar mensagem"
-                >
-                  <CheckMessage />
-                </button>
-              ) : (
-                <button
-                  onClick={() => setIsEditingMessage(true)}
-                  className="rounded-full p-2 text-sm text-primaria underline drop-shadow-editShadow hover:bg-clara3"
-                  aria-label="Editar mensagem"
-                >
-                  <EditIcon />
-                </button>
+              {calendars.length > 0 && (
+                <span className="rounded-full bg-clara3 px-2.5 py-0.5 text-xs font-semibold text-primaria">
+                  {enabledCount} de {calendars.length} ativas
+                </span>
               )}
             </div>
 
+            <ul className="mt-2 max-h-[232px] space-y-1 overflow-y-auto pr-1">
+              {calendars.map((calendar) => {
+                const active = selectedCalendars.has(calendar.calendar_id);
+                return (
+                  <li key={calendar.calendar_id}>
+                    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2.5 transition hover:bg-clara4">
+                      <span className="flex min-w-0 items-center gap-3">
+                        <span
+                          className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                            active ? "bg-sucesso" : "bg-cinza6"
+                          }`}
+                        />
+                        <span
+                          className={`min-w-0 break-words text-sm ${
+                            active ? "font-semibold text-texto1" : "text-texto3"
+                          }`}
+                        >
+                          {calendar.calendar_name}
+                        </span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        role="switch"
+                        checked={active}
+                        onChange={() =>
+                          openConfirmationModal(calendar.calendar_id)
+                        }
+                        className="peer sr-only"
+                      />
+                      <span
+                        aria-hidden="true"
+                        className={`relative h-6 w-11 shrink-0 rounded-full transition peer-focus-visible:ring-4 peer-focus-visible:ring-clara3 ${
+                          active ? "bg-primaria" : "bg-cinza6"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                            active ? "left-[22px]" : "left-0.5"
+                          }`}
+                        />
+                      </span>
+                    </label>
+                  </li>
+                );
+              })}
+              {calendars.length === 0 && (
+                <li className="px-3 py-4 text-center text-sm text-texto3">
+                  Nenhuma agenda encontrada.
+                </li>
+              )}
+            </ul>
+          </div>
+
+          {/* Mensagem de cobrança */}
+          <div className={`flex flex-col ${cardClass}`}>
+            <SectionTitle
+              icon={icons.message}
+              title="Mensagem de cobrança"
+              subtitle="Enviada pelo WhatsApp em “Enviar cobrança”"
+              action={
+                !isEditingMessage && (
+                  <button onClick={startEditMessage} className={pillButtonClass}>
+                    <Icon d={icons.edit} className="h-4 w-4" />
+                    Editar
+                  </button>
+                )
+              }
+            />
+
             {isEditingMessage ? (
-              <textarea
-                name="user_message"
-                value={userData.user_message || ""}
-                onChange={(e) =>
-                  setUserData((prevData) => ({
-                    ...prevData,
-                    [e.target.name]: e.target.value,
-                  }))
-                }
-                className="h-[250px] w-full resize-none overflow-y-auto rounded-md border border-gray-300 bg-white p-4 text-[15px] text-texto1"
-                placeholder="Escreva sua mensagem de cobrança aqui..."
-              />
-            ) : (
-              <div className="h-[250px] overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-gray-300 bg-white p-4 text-[15px] text-texto1">
-                {userData.user_message || (
-                  <span className="text-gray-400">
-                    Escreva sua mensagem de cobrança aqui...
+              <>
+                <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                  <span className="mr-1 text-xs font-semibold text-texto3">
+                    Inserir:
                   </span>
+                  {messageVariables.map((variable) => (
+                    <button
+                      key={variable.key}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => insertVariable(variable.key)}
+                      title={`Insere {{${variable.key}}}`}
+                      className="rounded-full border border-cinza9 bg-clara4 px-2.5 py-1 text-xs font-semibold text-primaria transition hover:border-primaria/40 hover:bg-clara3"
+                    >
+                      + {variable.label}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  name="user_message"
+                  value={userData.user_message || ""}
+                  onChange={(e) =>
+                    setUserData((prevData) => ({
+                      ...prevData,
+                      [e.target.name]: e.target.value,
+                    }))
+                  }
+                  ref={messageRef}
+                  autoFocus
+                  className="min-h-[200px] w-full flex-1 resize-none rounded-xl border border-cinza6 bg-bg1 p-4 text-[15px] text-texto1 transition focus:border-primaria/60 focus:outline-none focus:ring-4 focus:ring-clara3"
+                  placeholder="Escreva sua mensagem de cobrança aqui..."
+                />
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <span className="text-xs text-texto3">
+                    {(userData.user_message || "").length} caracteres
+                  </span>
+                  <div className="flex gap-2">
+                    <button onClick={cancelEditMessage} className={pillButtonClass}>
+                      Cancelar
+                    </button>
+                    <button onClick={saveMessage} className={primaryButtonClass}>
+                      <Icon d={icons.check} className="h-4 w-4" />
+                      Salvar
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex min-h-[200px] flex-1 flex-col rounded-xl bg-clara4 p-4">
+                <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-texto3">
+                  Prévia com dados de exemplo
+                </p>
+                {userData.user_message ? (
+                  <div className="relative max-w-[92%] self-start whitespace-pre-wrap break-words rounded-2xl rounded-tl-sm bg-bg1 px-4 py-3 text-[15px] text-texto1 shadow-card">
+                    {renderMessagePreview(
+                      userData.user_message,
+                      userData.clinic_name
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    onClick={startEditMessage}
+                    className="flex flex-1 items-center justify-center rounded-xl border-2 border-dashed border-cinza6 text-sm text-texto3 hover:border-primaria/40 hover:text-primaria"
+                  >
+                    Nenhuma mensagem ainda — clique para escrever
+                  </button>
                 )}
               </div>
             )}
@@ -587,13 +783,29 @@ const UserPage = () => {
       )}
 
       {isEditing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]">
-          <div className="max-h-[92vh] w-full max-w-[1076px] overflow-y-auto rounded-xl border border-cinza6 bg-bg1 p-5 shadow-lg md:p-8">
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-12 md:px-4">
-              <div className="min-w-0 space-y-6">
-                <h2 className="text-lg md:text-[25px] font-medium font-ubuntu text-primaria">
-                  Editar meus dados
-                </h2>
+        <div
+          onClick={closeOnBackdrop(closeEdit)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-bgM/30 p-4 backdrop-blur-[6px]"
+        >
+          <div className="flex max-h-[92vh] w-full max-w-[920px] animate-toast-in flex-col overflow-hidden rounded-2xl border border-cinza9 bg-bg1 shadow-dropShadow">
+            <div className="flex items-center justify-between border-b border-cinza9 px-5 py-4 md:px-8">
+              <h2 className="font-ubuntu text-lg font-bold tracking-tight text-texto1 md:text-xl">
+                Editar dados
+              </h2>
+              <button
+                onClick={closeEdit}
+                aria-label="Fechar"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-texto3 hover:bg-clara4 hover:text-primaria"
+              >
+                <Icon d="M6 6l12 12M18 6 6 18" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-8 overflow-y-auto px-5 py-6 md:grid-cols-2 md:gap-10 md:px-8">
+              <div className="min-w-0 space-y-4">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-texto3">
+                  Meus dados
+                </h3>
 
                 <div>
                   <label className={labelClass}>Nome</label>
@@ -602,7 +814,7 @@ const UserPage = () => {
                     value={draft.user_name || ""}
                     disabled
                     title="Vem da sua conta Google"
-                    className={`${inputClass} cursor-not-allowed opacity-60`}
+                    className={disabledInputClass}
                   />
                 </div>
 
@@ -613,9 +825,9 @@ const UserPage = () => {
                     value={draft.user_email || ""}
                     disabled
                     title="Vem da sua conta Google"
-                    className={`${inputClass} cursor-not-allowed opacity-60`}
+                    className={disabledInputClass}
                   />
-                  <p className="ml-2 mt-1 text-xs text-texto3">
+                  <p className="ml-1 mt-1 text-xs text-texto3">
                     Nome e e-mail vêm da sua conta Google.
                   </p>
                 </div>
@@ -662,10 +874,10 @@ const UserPage = () => {
                 </div>
               </div>
 
-              <div className="min-w-0 space-y-6">
-                <h2 className="text-lg md:text-[25px] font-medium font-ubuntu text-primaria">
+              <div className="min-w-0 space-y-4">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-texto3">
                   Dados para recibo
-                </h2>
+                </h3>
 
                 <div>
                   <label className={labelClass}>Nome/Clínica</label>
@@ -686,61 +898,48 @@ const UserPage = () => {
                     type="text"
                     value={draft.user_document || ""}
                     disabled
-                    className={`${inputClass} cursor-not-allowed opacity-60`}
+                    className={disabledInputClass}
                   />
-                  <p className="ml-2 mt-1 text-xs text-texto3">
+                  <p className="ml-1 mt-1 text-xs text-texto3">
                     O recibo usa o mesmo CPF/CNPJ de "Meus dados".
                   </p>
                 </div>
 
                 <div>
-                  <label className={labelClass}>Importar logotipo</label>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex h-[50px] min-w-0 flex-1 items-center rounded-xl border border-cinza6 bg-bg1 px-[16px] sm:max-w-[260px] shadow-card">
-                      <span className="truncate text-sm font-normal font-openSans text-texto2/70">
-                        {fileName}
+                  <label className={labelClass}>Logotipo</label>
+                  <label className="flex cursor-pointer items-center gap-4 rounded-xl border-2 border-dashed border-cinza6 p-4 transition hover:border-primaria/50 hover:bg-clara4">
+                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-clara3 text-primaria">
+                      <Icon d={icons.upload} />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-texto1">
+                        {draft.image instanceof File
+                          ? fileName
+                          : "Escolher imagem"}
                       </span>
-                    </div>
-                    <label className="flex cursor-pointer items-center gap-1 rounded-md px-2 py-1 text-primaria hover:bg-clara3">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        className="h-5 w-5"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 12l-4-4m0 0l-4 4m4-4v12"
-                        />
-                      </svg>
-                      <span className="underline">Importar arquivo</span>
-                      <input
-                        type="file"
-                        name="image"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
+                      <span className="block text-xs text-texto3">
+                        {draft.image instanceof File
+                          ? "Clique para trocar"
+                          : "PNG ou JPG"}
+                      </span>
+                    </span>
+                    <input
+                      type="file"
+                      name="image"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
                 </div>
               </div>
             </div>
 
-            <div className="mt-8 flex justify-end gap-3">
-              <button
-                onClick={closeEdit}
-                className="h-[39px] w-[108px] rounded-[100px] border border-primaria text-primaria hover:bg-clara4"
-              >
+            <div className="flex justify-end gap-3 border-t border-cinza9 px-5 py-4 md:px-8">
+              <button onClick={closeEdit} className={pillButtonClass}>
                 Cancelar
               </button>
-              <button
-                onClick={handleSave}
-                className="h-[40px] w-[90px] rounded-[100px] bg-primaria text-white hover:opacity-90"
-              >
+              <button onClick={handleSave} className={primaryButtonClass}>
                 Salvar
               </button>
             </div>
