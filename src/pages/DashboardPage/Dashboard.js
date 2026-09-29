@@ -54,6 +54,8 @@ const DashBoard = () => {
   const [overviewVersion, setOverviewVersion] = useState(0);
   // Horários das consultas do mês por paciente: { [customer_id]: { times, timed } }
   const [consultationTimes, setConsultationTimes] = useState({});
+  // Recibos já emitidos no mês: { [customer_id]: número }
+  const [receipts, setReceipts] = useState({});
   const [billingMessage, setBillingMessage] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState(null);
@@ -186,7 +188,7 @@ const DashBoard = () => {
   };
 
   const toggleDropdownPatients = (eventIndex, patient, clickEvent) => {
-    setMenuPosition(getMenuPosition(clickEvent.currentTarget, 220));
+    setMenuPosition(getMenuPosition(clickEvent.currentTarget, 280));
     setIsDropdownOpen(false);
     if (patient && patient.customer_id) {
       setSelectedPatient(patient);
@@ -282,6 +284,73 @@ const DashBoard = () => {
       active = false;
     };
   }, [selectedMonth, selectedYear, overviewVersion]);
+
+  useEffect(() => {
+    let active = true;
+    const loadReceipts = async () => {
+      const response = await fetch(
+        `${process.env.REACT_APP_API_URL}/dashboard/receipts?month=${selectedMonth}&year=${selectedYear}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
+          },
+        }
+      ).catch(() => null);
+      if (response?.ok && active) {
+        setReceipts(await response.json());
+      }
+    };
+    loadReceipts();
+    return () => {
+      active = false;
+    };
+  }, [selectedMonth, selectedYear]);
+
+  // Gera (ou reemite, com o mesmo número) o PDF e baixa no aparelho
+  const handleIssueReceipt = async (patient) => {
+    if (!["pago", "parcial"].includes(patient.payment_status)) {
+      notify.info("Registre o pagamento (total ou parcial) antes de emitir o recibo.");
+      return;
+    }
+    const response = await fetch(
+      `${process.env.REACT_APP_API_URL}/dashboard/receipts`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
+        },
+        body: JSON.stringify({
+          customer_id: patient.customer_id,
+          month_and_year: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`,
+        }),
+      }
+    ).catch(() => null);
+
+    if (!response?.ok) {
+      const data = await response?.json().catch(() => ({}));
+      notify.error(data?.error || "Não foi possível emitir o recibo.");
+      return;
+    }
+
+    const number = Number(response.headers.get("X-Receipt-Number"));
+    const fileName =
+      /filename="([^"]+)"/.exec(response.headers.get("Content-Disposition") || "")?.[1] ||
+      "recibo.pdf";
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+
+    if (number) {
+      setReceipts((prev) => ({ ...prev, [patient.customer_id]: number }));
+      notify.success(`Recibo nº ${String(number).padStart(4, "0")} emitido.`);
+    }
+  };
 
   const fetchBillingRecords = async (month, year) => {
     setLoading(true);
@@ -761,7 +830,7 @@ const DashBoard = () => {
                         </div>
                       </td>
                       <td className={tdClass}>
-                        <div className="flex items-center justify-center">
+                        <div className="flex flex-col items-center justify-center gap-0.5">
                           {patient.payment_status === "pago" ? (
                             <StatusBadge tone="ok">Pago</StatusBadge>
                           ) : patient.payment_status === "parcial" ? (
@@ -770,6 +839,12 @@ const DashBoard = () => {
                             </StatusBadge>
                           ) : (
                             <StatusBadge tone="pending">Em aberto</StatusBadge>
+                          )}
+                          {receipts[patient.customer_id] && (
+                            <span className="text-[11px] text-texto3">
+                              Recibo nº{" "}
+                              {String(receipts[patient.customer_id]).padStart(4, "0")}
+                            </span>
                           )}
                         </div>
                       </td>
@@ -841,6 +916,16 @@ const DashBoard = () => {
                     handleConfirmPayment(
                       filteredPatients[isDropdownOpenPatients]
                     );
+                  }}
+                  receiptNumber={
+                    receipts[filteredPatients[isDropdownOpenPatients].customer_id]
+                  }
+                  hasPayment={["pago", "parcial"].includes(
+                    filteredPatients[isDropdownOpenPatients].payment_status
+                  )}
+                  onIssueReceipt={() => {
+                    closeMenus();
+                    handleIssueReceipt(filteredPatients[isDropdownOpenPatients]);
                   }}
                 />
               </div>

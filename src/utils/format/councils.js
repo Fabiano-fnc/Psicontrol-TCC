@@ -80,6 +80,21 @@ export const regionOptions = (type) => {
   }));
 };
 
+// Descrição automática do serviço no recibo (mesma do backend)
+const SERVICES = {
+  CRP: "sessões de psicoterapia",
+  CRM: "consultas médicas",
+  CRO: "atendimentos odontológicos",
+  COREN: "atendimentos de enfermagem",
+  CRN: "consultas nutricionais",
+  CREFITO: "sessões de fisioterapia",
+};
+
+export const autoServiceLabel = (type, category) =>
+  type === "CREFITO" && category === "TO"
+    ? "sessões de terapia ocupacional"
+    : SERVICES[type] || "consultas";
+
 // "CRM-SP 123456"; com dados incompletos mostra o que já dá
 export const formatRegistry = ({ type, region, number, category }) => {
   const council = COUNCILS[type];

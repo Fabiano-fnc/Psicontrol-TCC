@@ -11,6 +11,7 @@ import {
 } from "../../utils/format/format";
 import {
   COUNCILS,
+  autoServiceLabel,
   formatRegistry,
   exampleRegistry,
   regionOptions,
@@ -296,6 +297,11 @@ const UserPage = () => {
       formData.append("user_phone", phoneDigits);
       formData.append("user_message", draft.user_message || "");
       formData.append("clinic_name", (draft.clinic_name || "").trim());
+      formData.append("city", (draft.city || "").trim());
+      formData.append(
+        "receipt_description",
+        (draft.receipt_description || "").trim()
+      );
 
       if (draft.image instanceof File) {
         formData.append("image", draft.image);
@@ -330,6 +336,8 @@ const UserPage = () => {
         user_phone: updatedData.user_phone,
         user_message: updatedData.user_message,
         clinic_name: updatedData.clinic_name,
+        city: updatedData.city,
+        receipt_description: updatedData.receipt_description,
         image: updatedData.image,
       }));
 
@@ -587,6 +595,17 @@ const UserPage = () => {
                   />
                   <Info label="CPF/CNPJ" value={documentNumber} />
                   <Info label={registryLabel} value={registry} />
+                  <Info label="Cidade" value={userData.city} />
+                  <Info
+                    label="Serviço no recibo"
+                    value={
+                      userData.receipt_description ||
+                      `${autoServiceLabel(
+                        userData.council_type,
+                        userData.council_category
+                      )} (automático)`
+                    }
+                  />
                   <div className="col-span-2 flex min-w-0 items-center gap-3 rounded-xl bg-clara4 px-4 py-3">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-cinza9 bg-bg1 text-texto3">
                       {logoUrl ? (
@@ -1131,6 +1150,46 @@ const UserPage = () => {
                     O recibo usa o mesmo CPF/CNPJ de "Meus dados".
                   </p>
                 </div>
+
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label htmlFor="city" className={labelClass}>
+                      Cidade
+                    </label>
+                    <input
+                      id="city"
+                      type="text"
+                      name="city"
+                      maxLength={100}
+                      value={draft.city || ""}
+                      onChange={handleChange}
+                      placeholder="Ex.: Pelotas/RS"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="receipt_description" className={labelClass}>
+                      Serviço no recibo
+                    </label>
+                    <input
+                      id="receipt_description"
+                      type="text"
+                      name="receipt_description"
+                      maxLength={120}
+                      value={draft.receipt_description || ""}
+                      onChange={handleChange}
+                      placeholder={autoServiceLabel(
+                        draft.council_type,
+                        draft.council_category
+                      )}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+                <p className="-mt-2 ml-1 text-xs text-texto3">
+                  A cidade vai na linha de local e data. Deixe o serviço em
+                  branco para usar o texto do seu conselho.
+                </p>
 
                 <div>
                   <label className={labelClass}>Logotipo</label>

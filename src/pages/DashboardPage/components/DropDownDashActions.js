@@ -6,6 +6,9 @@ const DropDownDashActions = ({
   onOpenModal,
   onPartialPayment,
   onConfirmedPayment,
+  onIssueReceipt,
+  receiptNumber,
+  hasPayment,
 }) => (
   <ActionMenu
     title={patientName}
@@ -27,6 +30,16 @@ const DropDownDashActions = ({
         label: "Confirmar pagamento",
         hint: "Marcar o mês como pago",
         onClick: onConfirmedPayment,
+      },
+      {
+        icon: "receipt",
+        label: "Emitir recibo",
+        hint: receiptNumber
+          ? `Recibo nº ${String(receiptNumber).padStart(4, "0")} · baixar de novo`
+          : hasPayment
+          ? "PDF com o valor pago"
+          : "Registre o pagamento antes",
+        onClick: onIssueReceipt,
       },
     ]}
   />
