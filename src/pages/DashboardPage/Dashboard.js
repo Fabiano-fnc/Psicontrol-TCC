@@ -20,6 +20,7 @@ import ModalPaymentDash from "./components/ModalPaymentDash";
 import FilterStatusDashBoard from "./components/FilterStatusDashBoard";
 import InsightsDashBoard from "./components/InsightsDashBoard";
 import { Months } from "../../utils/Months/months";
+import { paymentMethodLabel } from "../../utils/format/paymentMethods";
 
 const badgeStyles = {
   ok: "bg-green-50 text-green-700 ring-green-600/20",
@@ -71,12 +72,8 @@ const DashBoard = () => {
   const [isSearchBarOpen, setIsSearchBarOpen] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isPartialPaymentModalOpen, setIsPartialPaymentModalOpen] =
-    useState(false);
-  const [
-    selectedPatientForPartialPayment,
-    setSelectedPatientForPartialPayment,
-  ] = useState(null);
+  // Janela de pagamento: { mode: "full" | "partial", patient }
+  const [paymentModal, setPaymentModal] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
@@ -593,61 +590,15 @@ const DashBoard = () => {
     }
   };
 
-  const handleSavePartialPayment = async (paymentAmount) => {
-    if (!selectedPatientForPartialPayment) return;
-
-    const { customer_id } = selectedPatientForPartialPayment;
-
-    const response = await fetch(
-      `${process.env.REACT_APP_API_URL}/dashboard/update-partial-payment`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("authentication_token")}`,
-        },
-        body: JSON.stringify({
-          customer_id,
-          month_and_year: `${selectedYear}-${selectedMonth}`,
-          payment_amount: parseFloat(paymentAmount),
-        }),
-      }
-    );
-
-    if (response.ok) {
-      showConfirmPaymentToast();
-      setPatients((prevPatients) =>
-        prevPatients.map((patient) =>
-          patient.customer_id === customer_id
-            ? {
-                ...patient,
-                payment_amount: parseFloat(paymentAmount),
-                payment_status: "parcial",
-              }
-            : patient
-        )
-      );
-
-      setIsPartialPaymentModalOpen(false);
-      setOverviewVersion((v) => v + 1);
-    } else {
-      notify.error("Erro ao salvar pagamento parcial.");
-    }
-  };
-
-  const handleOpenPartialPayment = (patient) => {
-    setSelectedPatientForPartialPayment(patient);
-    setIsPartialPaymentModalOpen(true);
-  };
-
-  const handleConfirmPayment = async (patient) => {
-    if (!patient || !patient.customer_id) {
-      notify.error("Paciente não encontrado.");
-      return;
-    }
+  // Confirma o mês inteiro ou registra um parcial, com a forma de pagamento
+  const handleSavePayment = async ({ amount, method }) => {
+    const { mode, patient } = paymentModal;
+    const partial = mode === "partial";
 
     const response = await fetch(
-      `${process.env.REACT_APP_API_URL}/dashboard/confirm-payment`,
+      `${process.env.REACT_APP_API_URL}/dashboard/${
+        partial ? "update-partial-payment" : "confirm-payment"
+      }`,
       {
         method: "POST",
         headers: {
@@ -656,29 +607,43 @@ const DashBoard = () => {
         },
         body: JSON.stringify({
           customer_id: patient.customer_id,
-          month_and_year: `${selectedYear}-${selectedMonth}`,
+          month_and_year: `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`,
+          payment_method: method || null,
+          ...(partial ? { payment_amount: amount } : {}),
         }),
       }
-    );
+    ).catch(() => null);
 
-    if (response.ok) {
-      showConfirmPaymentToast();
-      setPatients((prevPatients) =>
-        prevPatients.map((p) =>
-          p.customer_id === patient.customer_id
-            ? {
-                ...p,
-                was_charged: true,
-                payment_status: "pago",
-                invoice_issued: true,
-              }
-            : p
-        )
+    if (!response?.ok) {
+      notify.error(
+        partial ? "Erro ao salvar pagamento parcial." : "Erro ao confirmar pagamento."
       );
-      setOverviewVersion((v) => v + 1);
-    } else {
-      notify.error("Erro ao confirmar pagamento.");
+      return;
     }
+
+    showConfirmPaymentToast();
+    setPatients((prevPatients) =>
+      prevPatients.map((p) =>
+        p.customer_id !== patient.customer_id
+          ? p
+          : partial
+          ? {
+              ...p,
+              payment_amount: amount,
+              payment_status: "parcial",
+              payment_method: method || null,
+            }
+          : {
+              ...p,
+              was_charged: true,
+              payment_status: "pago",
+              invoice_issued: true,
+              payment_method: method || null,
+            }
+      )
+    );
+    setPaymentModal(null);
+    setOverviewVersion((v) => v + 1);
   };
 
   const actionButtonClass =
@@ -832,7 +797,11 @@ const DashBoard = () => {
                       <td className={tdClass}>
                         <div className="flex flex-col items-center justify-center gap-0.5">
                           {patient.payment_status === "pago" ? (
-                            <StatusBadge tone="ok">Pago</StatusBadge>
+                            <StatusBadge tone="ok">
+                              Pago
+                              {patient.payment_method &&
+                                ` · ${paymentMethodLabel(patient.payment_method)}`}
+                            </StatusBadge>
                           ) : patient.payment_status === "parcial" ? (
                             <StatusBadge tone="warn">
                               Parcial · {formatBRL(patient.payment_amount)}
@@ -907,15 +876,17 @@ const DashBoard = () => {
                   }}
                   onPartialPayment={() => {
                     closeMenus();
-                    handleOpenPartialPayment(
-                      filteredPatients[isDropdownOpenPatients]
-                    );
+                    setPaymentModal({
+                      mode: "partial",
+                      patient: filteredPatients[isDropdownOpenPatients],
+                    });
                   }}
                   onConfirmedPayment={() => {
                     closeMenus();
-                    handleConfirmPayment(
-                      filteredPatients[isDropdownOpenPatients]
-                    );
+                    setPaymentModal({
+                      mode: "full",
+                      patient: filteredPatients[isDropdownOpenPatients],
+                    });
                   }}
                   receiptNumber={
                     receipts[filteredPatients[isDropdownOpenPatients].customer_id]
@@ -1062,11 +1033,14 @@ const DashBoard = () => {
         />
       )}
 
-      {isPartialPaymentModalOpen && selectedPatientForPartialPayment && (
+      {paymentModal && (
         <ModalPaymentDash
-          onClose={() => setIsPartialPaymentModalOpen(false)}
-          onSave={handleSavePartialPayment}
-          totalAmount={selectedPatientForPartialPayment.total_consultation_fee}
+          mode={paymentModal.mode}
+          patientName={paymentModal.patient.Customer?.customer_name}
+          totalAmount={paymentModal.patient.total_consultation_fee}
+          initialMethod={paymentModal.patient.payment_method}
+          onClose={() => setPaymentModal(null)}
+          onSave={handleSavePayment}
         />
       )}
 

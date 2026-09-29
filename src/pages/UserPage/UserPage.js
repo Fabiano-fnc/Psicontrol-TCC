@@ -303,6 +303,12 @@ const UserPage = () => {
         (draft.receipt_description || "").trim()
       );
 
+      if (draft.signature instanceof File) {
+        formData.append("signature", draft.signature);
+      } else if (draft.remove_signature) {
+        formData.append("remove_signature", "true");
+      }
+
       if (draft.image instanceof File) {
         formData.append("image", draft.image);
       }
@@ -339,6 +345,7 @@ const UserPage = () => {
         city: updatedData.city,
         receipt_description: updatedData.receipt_description,
         image: updatedData.image,
+        signature_image: updatedData.signature_image,
       }));
 
       setDraft(null);
@@ -435,6 +442,25 @@ const UserPage = () => {
     }));
   };
 
+  const handleSignatureChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setDraft((prevDraft) => ({
+      ...prevDraft,
+      signature: file,
+      signaturePreview: URL.createObjectURL(file),
+      remove_signature: false,
+    }));
+  };
+
+  const removeSignature = () =>
+    setDraft((prevDraft) => ({
+      ...prevDraft,
+      signature: null,
+      signaturePreview: null,
+      remove_signature: true,
+    }));
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     setDraft((prevDraft) => ({
@@ -485,6 +511,14 @@ const UserPage = () => {
       : `${userData.council_number} · falta a região`
     : "";
   const phone = formatPhone(userData.user_phone);
+  const signatureUrl = userData.signature_image
+    ? `${process.env.REACT_APP_API_URL}${userData.signature_image}`
+    : null;
+  // Prévia no formulário: arquivo novo > atual (a menos que tenha sido removida)
+  const draftSignatureUrl = draft
+    ? draft.signaturePreview || (draft.remove_signature ? null : signatureUrl)
+    : null;
+
   const logoUrl =
     typeof userData.image === "string" && userData.image
       ? `${process.env.REACT_APP_API_URL}${userData.image}`
@@ -628,6 +662,33 @@ const UserPage = () => {
                         }`}
                       >
                         {logoUrl ? "Logotipo enviado" : "Nenhum logotipo enviado"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="col-span-2 flex min-w-0 items-center gap-3 rounded-xl bg-clara4 px-4 py-3">
+                    <span className="flex h-12 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-cinza9 bg-bg1 text-texto3">
+                      {signatureUrl ? (
+                        <img
+                          src={signatureUrl}
+                          alt="Assinatura"
+                          className="h-full w-full object-contain p-1"
+                        />
+                      ) : (
+                        <Icon d={icons.edit} />
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-texto3">
+                        Assinatura
+                      </p>
+                      <p
+                        className={`text-[15px] ${
+                          signatureUrl ? "font-semibold text-texto1" : "italic text-texto3"
+                        }`}
+                      >
+                        {signatureUrl
+                          ? "Vai no recibo"
+                          : "Sem assinatura (linha em branco)"}
                       </p>
                     </div>
                   </div>
@@ -1217,6 +1278,48 @@ const UserPage = () => {
                       className="hidden"
                     />
                   </label>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Assinatura</label>
+                  <div className="flex items-center gap-3 rounded-xl border-2 border-dashed border-cinza6 p-3">
+                    <span className="flex h-14 w-28 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-cinza9 bg-white">
+                      {draftSignatureUrl ? (
+                        <img
+                          src={draftSignatureUrl}
+                          alt="Prévia da assinatura"
+                          className="h-full w-full object-contain p-1"
+                        />
+                      ) : (
+                        <span className="text-xs text-texto3">Sem imagem</span>
+                      )}
+                    </span>
+                    <div className="flex min-w-0 flex-1 flex-wrap gap-2">
+                      <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-full bg-clara3 px-3 text-sm font-semibold text-primaria transition hover:bg-primaria hover:text-white">
+                        <Icon d={icons.upload} className="h-4 w-4" />
+                        {draftSignatureUrl ? "Trocar" : "Enviar"}
+                        <input
+                          type="file"
+                          accept="image/png,image/jpeg"
+                          onChange={handleSignatureChange}
+                          className="hidden"
+                        />
+                      </label>
+                      {draftSignatureUrl && (
+                        <button
+                          type="button"
+                          onClick={removeSignature}
+                          className="h-9 rounded-full px-3 text-sm font-semibold text-texto3 transition hover:bg-erro/10 hover:text-erro"
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="ml-1 mt-1 text-xs text-texto3">
+                    Foto da sua assinatura em papel branco (PNG ou JPG). Aparece
+                    acima da linha no recibo.
+                  </p>
                 </div>
               </div>
             </div>
