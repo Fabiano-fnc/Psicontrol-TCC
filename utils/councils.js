@@ -100,6 +100,24 @@ const validateRegistry = ({ type, region, number, category }) => {
   };
 };
 
+// Descrição automática do serviço no recibo: [singular, plural]
+const SERVICES = {
+  CRP: ["sessão de psicoterapia", "sessões de psicoterapia"],
+  CRM: ["consulta médica", "consultas médicas"],
+  CRO: ["atendimento odontológico", "atendimentos odontológicos"],
+  COREN: ["atendimento de enfermagem", "atendimentos de enfermagem"],
+  CRN: ["consulta nutricional", "consultas nutricionais"],
+  CREFITO: ["sessão de fisioterapia", "sessões de fisioterapia"],
+  CREFITO_TO: ["sessão de terapia ocupacional", "sessões de terapia ocupacional"],
+};
+
+// "3 sessões de psicoterapia"
+const describeService = ({ type, category }, count) => {
+  const key = type === "CREFITO" && category === "TO" ? "CREFITO_TO" : type;
+  const [singular, plural] = SERVICES[key] || ["consulta", "consultas"];
+  return `${count} ${count === 1 ? singular : plural}`;
+};
+
 const formatRegistry = ({ type, region, number, category }) => {
   const council = COUNCILS[type];
   if (!council || !number) return null;
@@ -107,4 +125,11 @@ const formatRegistry = ({ type, region, number, category }) => {
   return council.format({ region, number, category });
 };
 
-module.exports = { COUNCILS, CRP_REGIONS, UFS, validateRegistry, formatRegistry };
+module.exports = {
+  COUNCILS,
+  CRP_REGIONS,
+  UFS,
+  validateRegistry,
+  formatRegistry,
+  describeService,
+};

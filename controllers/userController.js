@@ -30,6 +30,8 @@ const EDITABLE_FIELDS = [
   "user_phone",
   "user_message",
   "clinic_name",
+  "city",
+  "receipt_description",
 ];
 
 const FIELD_RULES = {
@@ -37,6 +39,8 @@ const FIELD_RULES = {
   user_cnpj: { pattern: /^\d{14}$/, message: "CNPJ deve ter 14 dígitos." },
   user_phone: { pattern: /^\d{10,15}$/, message: "Telefone deve ter entre 10 e 15 dígitos." },
   clinic_name: { maxLength: 255, message: "Nome/Clínica deve ter no máximo 255 caracteres." },
+  city: { maxLength: 100, message: "Cidade deve ter no máximo 100 caracteres." },
+  receipt_description: { maxLength: 120, message: "Descrição do serviço deve ter no máximo 120 caracteres." },
 };
 
 const toUserResponse = (user) => ({
@@ -59,6 +63,8 @@ const toUserResponse = (user) => ({
   user_email: user.user_email,
   user_message: user.user_message,
   clinic_name: user.clinic_name,
+  city: user.city,
+  receipt_description: user.receipt_description,
   image: user.image ? `/uploads/${user.image}` : null,
 });
 

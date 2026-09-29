@@ -47,6 +47,16 @@ const User = sequelize.define(
       type: DataTypes.STRING(5),
       allowNull: true,
     },
+    // Linha "local e data" do recibo, ex.: "Pelotas/RS"
+    city: {
+      type: DataTypes.STRING(100),
+      allowNull: true,
+    },
+    // Vazia = descrição automática pelo conselho
+    receipt_description: {
+      type: DataTypes.STRING(120),
+      allowNull: true,
+    },
     user_phone: {
       type: DataTypes.STRING(15),
       allowNull: true,
