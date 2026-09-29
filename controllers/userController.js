@@ -1,4 +1,5 @@
 const { User } = require("../models");
+const { validateRegistry, formatRegistry } = require("../utils/councils");
 const multer = require("multer");
 const path = require("path");
 
@@ -26,7 +27,6 @@ const upload = multer({
 const EDITABLE_FIELDS = [
   "user_cpf",
   "user_cnpj",
-  "crp_number",
   "user_phone",
   "user_message",
   "clinic_name",
@@ -35,7 +35,6 @@ const EDITABLE_FIELDS = [
 const FIELD_RULES = {
   user_cpf: { pattern: /^\d{11}$/, message: "CPF deve ter 11 dígitos." },
   user_cnpj: { pattern: /^\d{14}$/, message: "CNPJ deve ter 14 dígitos." },
-  crp_number: { pattern: /^\d{2}\/\d{4,6}$/, message: "CRP deve estar no formato XX/XXXXX." },
   user_phone: { pattern: /^\d{10,15}$/, message: "Telefone deve ter entre 10 e 15 dígitos." },
   clinic_name: { maxLength: 255, message: "Nome/Clínica deve ter no máximo 255 caracteres." },
 };
@@ -45,7 +44,17 @@ const toUserResponse = (user) => ({
   user_name: user.user_name,
   user_cpf: user.user_cpf,
   user_cnpj: user.user_cnpj,
-  crp_number: user.crp_number,
+  council_type: user.council_type,
+  council_region: user.council_region,
+  council_number: user.council_number,
+  council_category: user.council_category,
+  // Registro já escrito no formato do conselho, ex.: "CRM-SP 123456"
+  registry: formatRegistry({
+    type: user.council_type,
+    region: user.council_region,
+    number: user.council_number,
+    category: user.council_category,
+  }),
   user_phone: user.user_phone,
   user_email: user.user_email,
   user_message: user.user_message,
@@ -76,6 +85,33 @@ const buildUserUpdates = (body) => {
     }
 
     updates[field] = value;
+  }
+
+  // Registro profissional: vem junto (conselho + região + número + categoria).
+  // Número vazio apaga o registro.
+  if (body.council_number !== undefined) {
+    if (String(body.council_number).trim() === "") {
+      Object.assign(updates, {
+        council_type: null,
+        council_region: null,
+        council_number: null,
+        council_category: null,
+      });
+    } else {
+      const { value, error } = validateRegistry({
+        type: body.council_type,
+        region: body.council_region,
+        number: body.council_number,
+        category: body.council_category,
+      });
+      if (error) return { error };
+      Object.assign(updates, {
+        council_type: value.type,
+        council_region: value.region,
+        council_number: value.number,
+        council_category: value.category,
+      });
+    }
   }
 
   return { updates };

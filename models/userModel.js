@@ -26,8 +26,25 @@ const User = sequelize.define(
       type: DataTypes.STRING(14),
       allowNull: true,
     },
+    // Campo antigo (só CRP); o registro atual fica em council_*
     crp_number: {
       type: DataTypes.STRING(15),
+      allowNull: true,
+    },
+    council_type: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    council_region: {
+      type: DataTypes.STRING(5),
+      allowNull: true,
+    },
+    council_number: {
+      type: DataTypes.STRING(10),
+      allowNull: true,
+    },
+    council_category: {
+      type: DataTypes.STRING(5),
       allowNull: true,
     },
     user_phone: {
