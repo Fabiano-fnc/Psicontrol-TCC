@@ -7,9 +7,14 @@ import { showErrorToast } from "../../utils/notification/toastify";
 import {
   onlyDigits,
   formatDocument,
-  formatCrp,
   formatPhone,
 } from "../../utils/format/format";
+import {
+  COUNCILS,
+  formatRegistry,
+  exampleRegistry,
+  regionOptions,
+} from "../../utils/format/councils";
 
 const icons = {
   edit: "M4 20h4L18.5 9.5a2.1 2.1 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4",
@@ -76,7 +81,11 @@ const UserPage = () => {
     user_email: "",
     user_cpf: "",
     user_cnpj: "",
-    crp_number: "",
+    council_type: null,
+    council_region: null,
+    council_number: null,
+    council_category: null,
+    registry: null,
     user_phone: "",
     user_message: "",
     image: null,
@@ -223,7 +232,10 @@ const UserPage = () => {
       ...userData,
       user_document: formatDocument(userData.user_cpf || userData.user_cnpj),
       user_phone: formatPhone(userData.user_phone),
-      crp_number: formatCrp(userData.crp_number),
+      council_type: userData.council_type || "CRP",
+      council_region: userData.council_region || "",
+      council_number: userData.council_number || "",
+      council_category: userData.council_category || "",
     });
     setFileName("nomedoarquivo.png");
   };
@@ -243,10 +255,29 @@ const UserPage = () => {
       return;
     }
 
-    const crpDigits = onlyDigits(draft.crp_number);
-    if (crpDigits.length > 0 && crpDigits.length < 6) {
-      showErrorToast("CRP incompleto. Use o formato XX/XXXXX.");
-      return;
+    // Registro profissional: número vazio = sem registro
+    const council = COUNCILS[draft.council_type];
+    const councilNumber = onlyDigits(draft.council_number);
+    if (councilNumber) {
+      const [min, max] = council.digits;
+      if (!draft.council_region) {
+        showErrorToast(
+          council.region === "uf"
+            ? `Escolha o estado do ${draft.council_type}.`
+            : `Escolha a região do ${draft.council_type}.`
+        );
+        return;
+      }
+      if (council.categories && !draft.council_category) {
+        showErrorToast(`Escolha a categoria do ${draft.council_type}.`);
+        return;
+      }
+      if (councilNumber.length < min || councilNumber.length > max) {
+        showErrorToast(
+          `O número do ${draft.council_type} deve ter de ${min} a ${max} dígitos.`
+        );
+        return;
+      }
     }
 
     const isCnpj = documentDigits.length === 14;
@@ -255,7 +286,13 @@ const UserPage = () => {
       const formData = new FormData();
       formData.append("user_cpf", isCnpj ? "" : documentDigits);
       formData.append("user_cnpj", isCnpj ? documentDigits : "");
-      formData.append("crp_number", formatCrp(draft.crp_number));
+      formData.append("council_type", draft.council_type);
+      formData.append("council_region", draft.council_region || "");
+      formData.append("council_number", councilNumber);
+      formData.append(
+        "council_category",
+        council.categories ? draft.council_category || "" : ""
+      );
       formData.append("user_phone", phoneDigits);
       formData.append("user_message", draft.user_message || "");
       formData.append("clinic_name", (draft.clinic_name || "").trim());
@@ -285,7 +322,11 @@ const UserPage = () => {
         ...prevData,
         user_cpf: updatedData.user_cpf,
         user_cnpj: updatedData.user_cnpj,
-        crp_number: updatedData.crp_number,
+        council_type: updatedData.council_type,
+        council_region: updatedData.council_region,
+        council_number: updatedData.council_number,
+        council_category: updatedData.council_category,
+        registry: updatedData.registry,
         user_phone: updatedData.user_phone,
         user_message: updatedData.user_message,
         clinic_name: updatedData.clinic_name,
@@ -376,8 +417,8 @@ const UserPage = () => {
         ? formatDocument(value)
         : name === "user_phone"
         ? formatPhone(value)
-        : name === "crp_number"
-        ? formatCrp(value)
+        : name === "council_number"
+        ? onlyDigits(value).slice(0, COUNCILS[draft.council_type].digits[1])
         : value;
 
     setDraft((prevDraft) => ({
@@ -418,7 +459,7 @@ const UserPage = () => {
   const labelClass =
     "mb-1.5 ml-1 block text-sm font-semibold text-texto2";
   const inputClass =
-    "h-[46px] w-full rounded-xl border border-cinza6 bg-bg1 px-4 text-sm font-openSans text-texto1 transition focus:border-primaria/60 focus:outline-none focus:ring-4 focus:ring-clara3";
+    "h-[46px] w-full rounded-xl border border-cinza6 bg-bg1 px-4 text-base font-openSans sm:text-sm text-texto1 transition focus:border-primaria/60 focus:outline-none focus:ring-4 focus:ring-clara3";
   const disabledInputClass = `${inputClass} cursor-not-allowed bg-clara4 text-texto3`;
   const cardClass =
     "min-w-0 rounded-2xl border border-cinza9 bg-bg1 p-5 shadow-card md:p-6";
@@ -428,7 +469,13 @@ const UserPage = () => {
     "inline-flex h-9 items-center gap-2 rounded-full bg-primaria px-4 text-sm font-semibold text-white shadow-card transition hover:opacity-90 active:scale-[0.98]";
 
   const documentNumber = formatDocument(userData.user_cpf || userData.user_cnpj);
-  const crp = formatCrp(userData.crp_number);
+  // Registro no formato do conselho; sem região, avisa que falta escolher
+  const registryLabel = userData.council_type || "Registro profissional";
+  const registry = userData.council_number
+    ? userData.council_region
+      ? userData.registry
+      : `${userData.council_number} · falta a região`
+    : "";
   const phone = formatPhone(userData.user_phone);
   const logoUrl =
     typeof userData.image === "string" && userData.image
@@ -519,7 +566,7 @@ const UserPage = () => {
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
                   <Info label="CPF/CNPJ" value={documentNumber} />
-                  <Info label="CRP" value={crp} />
+                  <Info label={registryLabel} value={registry} />
                   <Info
                     label="Telefone"
                     value={phone}
@@ -539,7 +586,7 @@ const UserPage = () => {
                     className="col-span-2"
                   />
                   <Info label="CPF/CNPJ" value={documentNumber} />
-                  <Info label="CRP" value={crp} />
+                  <Info label={registryLabel} value={registry} />
                   <div className="col-span-2 flex min-w-0 items-center gap-3 rounded-xl bg-clara4 px-4 py-3">
                     <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-cinza9 bg-bg1 text-texto3">
                       {logoUrl ? (
@@ -942,18 +989,116 @@ const UserPage = () => {
                   </div>
                 </div>
 
-                <div className="sm:w-1/2 sm:pr-2">
-                  <label className={labelClass}>CRP</label>
-                  <input
-                    type="text"
-                    name="crp_number"
-                    inputMode="numeric"
-                    value={draft.crp_number || ""}
-                    onChange={handleChange}
-                    placeholder="XX/XXXXX"
-                    className={inputClass}
-                  />
-                </div>
+                <fieldset className="rounded-2xl border border-cinza9 bg-clara4/60 p-4">
+                  <legend className="px-1 text-sm font-semibold text-texto2">
+                    Registro profissional
+                  </legend>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <label htmlFor="council_type" className={labelClass}>
+                        Conselho
+                      </label>
+                      <select
+                        id="council_type"
+                        value={draft.council_type}
+                        onChange={(e) =>
+                          setDraft((prev) => ({
+                            ...prev,
+                            council_type: e.target.value,
+                            // Região e categoria dependem do conselho
+                            council_region: "",
+                            council_category: "",
+                            council_number: onlyDigits(prev.council_number).slice(
+                              0,
+                              COUNCILS[e.target.value].digits[1]
+                            ),
+                          }))
+                        }
+                        className={inputClass}
+                      >
+                        {Object.entries(COUNCILS).map(([id, council]) => (
+                          <option key={id} value={id}>
+                            {council.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="council_region" className={labelClass}>
+                        {COUNCILS[draft.council_type].region === "uf"
+                          ? "Estado"
+                          : "Região"}
+                      </label>
+                      <select
+                        id="council_region"
+                        name="council_region"
+                        value={draft.council_region}
+                        onChange={handleChange}
+                        className={inputClass}
+                      >
+                        <option value="">Escolha</option>
+                        {regionOptions(draft.council_type).map((option) => (
+                          <option key={option.id} value={option.id}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label htmlFor="council_number" className={labelClass}>
+                        Número
+                      </label>
+                      <input
+                        id="council_number"
+                        type="text"
+                        name="council_number"
+                        inputMode="numeric"
+                        value={draft.council_number}
+                        onChange={handleChange}
+                        placeholder={"0".repeat(
+                          Math.min(COUNCILS[draft.council_type].digits[1], 6)
+                        )}
+                        className={inputClass}
+                      />
+                    </div>
+
+                    {COUNCILS[draft.council_type].categories && (
+                      <div className="col-span-2">
+                        <label htmlFor="council_category" className={labelClass}>
+                          Categoria
+                        </label>
+                        <select
+                          id="council_category"
+                          name="council_category"
+                          value={draft.council_category}
+                          onChange={handleChange}
+                          className={inputClass}
+                        >
+                          <option value="">Escolha</option>
+                          {COUNCILS[draft.council_type].categories.map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.label} ({c.id})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-texto3">
+                    Vai aparecer assim:
+                    <span className="rounded-full bg-bg1 px-2.5 py-1 font-semibold text-texto1 shadow-card">
+                      {formatRegistry({
+                        type: draft.council_type,
+                        region: draft.council_region,
+                        number: draft.council_number,
+                        category: draft.council_category,
+                      }) || exampleRegistry(draft.council_type)}
+                    </span>
+                  </p>
+                </fieldset>
               </div>
 
               <div className="min-w-0 space-y-4">

@@ -18,12 +18,6 @@ export const formatDocument = (value) => {
     .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 };
 
-// CRP: região (2 dígitos) / inscrição (4 a 6 dígitos), ex.: 06/123456
-export const formatCrp = (value) => {
-  const digits = onlyDigits(value).slice(0, 8);
-  return digits.length > 2 ? `${digits.slice(0, 2)}/${digits.slice(2)}` : digits;
-};
-
 export const formatPhone = (value) => {
   const digits = onlyDigits(value).slice(0, 11);
   if (digits.length <= 2) return digits;
