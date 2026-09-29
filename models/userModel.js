@@ -57,6 +57,11 @@ const User = sequelize.define(
       type: DataTypes.STRING(120),
       allowNull: true,
     },
+    // Imagem da assinatura no recibo (arquivo em uploads/)
+    signature_image: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    },
     user_phone: {
       type: DataTypes.STRING(15),
       allowNull: true,

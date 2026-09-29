@@ -5,17 +5,28 @@ const {
   Calendar,
 } = require("../models");
 const { Op } = require("sequelize");
+const { parsePaymentMethod } = require("../utils/paymentMethods");
+
+// Registro de faturamento do mês, só se o paciente for do usuário logado
+const findOwnBillingRecord = (userId, customer_id, month_and_year) =>
+  CustomersBillingRecords.findOne({
+    where: { customer_id, month_and_year },
+    include: [
+      { model: Customer, where: { user_id: userId }, attributes: [] },
+    ],
+  });
 
 exports.updatePartialPayment = async (req, res) => {
   try {
     const { customer_id, month_and_year, payment_amount } = req.body;
+    const method = parsePaymentMethod(req.body.payment_method);
+    if (method.error) return res.status(400).json({ error: method.error });
 
-    const billingRecord = await CustomersBillingRecords.findOne({
-      where: {
-        customer_id,
-        month_and_year,
-      },
-    });
+    const billingRecord = await findOwnBillingRecord(
+      req.user.user_id,
+      customer_id,
+      month_and_year
+    );
 
     if (!billingRecord) {
       return res.status(404).json({
@@ -26,6 +37,7 @@ exports.updatePartialPayment = async (req, res) => {
     await billingRecord.update({
       payment_amount,
       payment_status: "parcial",
+      ...(method.skip ? {} : { payment_method: method.value }),
     });
 
     return res.status(200).json({
@@ -42,13 +54,14 @@ exports.updatePartialPayment = async (req, res) => {
 exports.confirmPayment = async (req, res) => {
   try {
     const { customer_id, month_and_year } = req.body;
+    const method = parsePaymentMethod(req.body.payment_method);
+    if (method.error) return res.status(400).json({ error: method.error });
 
-    const billingRecord = await CustomersBillingRecords.findOne({
-      where: {
-        customer_id,
-        month_and_year,
-      },
-    });
+    const billingRecord = await findOwnBillingRecord(
+      req.user.user_id,
+      customer_id,
+      month_and_year
+    );
 
     if (!billingRecord) {
       return res.status(404).json({
@@ -59,6 +72,8 @@ exports.confirmPayment = async (req, res) => {
     await billingRecord.update({
       payment_status: "pago",
       payment_date: new Date(),
+      invoice_issued: true,
+      ...(method.skip ? {} : { payment_method: method.value }),
     });
 
     return res.status(200).json({
@@ -76,12 +91,11 @@ exports.markInvoiceSent = async (req, res) => {
   try {
     const { customer_id, month_and_year } = req.body;
 
-    const billingRecord = await CustomersBillingRecords.findOne({
-      where: {
-        customer_id,
-        month_and_year,
-      },
-    });
+    const billingRecord = await findOwnBillingRecord(
+      req.user.user_id,
+      customer_id,
+      month_and_year
+    );
 
     if (!billingRecord) {
       return res.status(404).json({

@@ -66,6 +66,7 @@ const toUserResponse = (user) => ({
   city: user.city,
   receipt_description: user.receipt_description,
   image: user.image ? `/uploads/${user.image}` : null,
+  signature_image: user.signature_image ? `/uploads/${user.signature_image}` : null,
 });
 
 // Campo ausente na requisição: não altera. Campo vazio: apaga (null).
@@ -142,7 +143,10 @@ exports.getUser = async (req, res) => {
 
 // Função para editar o usuário com upload de imagem
 exports.editUser = [
-  upload.single("image"),
+  upload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "signature", maxCount: 1 },
+  ]),
   async (req, res) => {
     const userId = req.user.user_id;
     const { updates, error } = buildUserUpdates(req.body);
@@ -151,8 +155,14 @@ exports.editUser = [
       return res.status(400).json({ error });
     }
 
-    if (req.file) {
-      updates.image = req.file.filename;
+    if (req.files?.image?.[0]) {
+      updates.image = req.files.image[0].filename;
+    }
+    // Assinatura: arquivo novo substitui; remove_signature=true apaga
+    if (req.files?.signature?.[0]) {
+      updates.signature_image = req.files.signature[0].filename;
+    } else if (req.body.remove_signature === "true") {
+      updates.signature_image = null;
     }
 
     try {

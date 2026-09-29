@@ -50,6 +50,11 @@ const CustomersBillingRecords = sequelize.define(
       type: DataTypes.STRING(255),
       allowNull: true,
     },
+    // pix | dinheiro | credito | debito | transferencia (utils/paymentMethods)
+    payment_method: {
+      type: DataTypes.STRING(20),
+      allowNull: true,
+    },
     was_charged: {
       type: DataTypes.BOOLEAN,
       allowNull: true,

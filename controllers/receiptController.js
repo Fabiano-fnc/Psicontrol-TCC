@@ -7,6 +7,7 @@ const {
 } = require("../models");
 const { formatRegistry, describeService } = require("../utils/councils");
 const { writeReceiptPdf, logoPathFor } = require("../utils/receiptPdf");
+const { PAYMENT_METHODS } = require("../utils/paymentMethods");
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
@@ -126,6 +127,7 @@ exports.issueReceipt = async (req, res) => {
     total,
     partial,
     paymentDate: partial ? null : billing.payment_date,
+    paymentMethod: PAYMENT_METHODS[billing.payment_method] || null,
     issuedAt: new Date(receipt.issued_at),
     monthAndYear,
     days,
@@ -149,6 +151,7 @@ exports.issueReceipt = async (req, res) => {
       email: user.user_email,
       city: user.city,
       logoPath: logoPathFor(user.image),
+      signaturePath: logoPathFor(user.signature_image),
     },
   });
 };

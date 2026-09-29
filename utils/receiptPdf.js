@@ -186,8 +186,12 @@ const writeReceiptPdf = (stream, data) => {
     paragraph
   );
 
-  if (data.paymentDate) {
-    doc.moveDown(0.6).font("Helvetica").text(`Pagamento recebido em ${shortDate(data.paymentDate)}.`, paragraph);
+  // "Pagamento recebido em 28/09/2026 via Pix." (partes só se existirem)
+  if (data.paymentDate || data.paymentMethod) {
+    const when = data.paymentDate ? ` em ${shortDate(data.paymentDate)}` : "";
+    const how = data.paymentMethod ? ` via ${data.paymentMethod}` : "";
+    const kind = data.partial ? "Pagamento parcial recebido" : "Pagamento recebido";
+    doc.moveDown(0.6).font("Helvetica").text(`${kind}${when}${how}.`, paragraph);
   }
 
   // Local e data
@@ -195,10 +199,21 @@ const writeReceiptPdf = (stream, data) => {
   const place = pro.city ? `${pro.city}, ${longDate(data.issuedAt)}.` : `${longDate(data.issuedAt)}.`;
   doc.font("Helvetica").fontSize(12).text(place, left, doc.y, { width, align: "right" });
 
-  // Assinatura
+  // Assinatura: imagem enviada no perfil fica logo acima da linha
   const signY = doc.y + 70;
   const signW = 280;
   const signX = left + (width - signW) / 2;
+  if (pro.signaturePath && fs.existsSync(pro.signaturePath)) {
+    try {
+      doc.image(pro.signaturePath, signX + 40, signY - 58, {
+        fit: [signW - 80, 54],
+        align: "center",
+        valign: "bottom",
+      });
+    } catch {
+      // Formato não suportado pelo PDF: fica a linha para assinar à mão
+    }
+  }
   doc.moveTo(signX, signY).lineTo(signX + signW, signY).lineWidth(0.8).strokeColor(COLORS.text).stroke();
   doc
     .fillColor(COLORS.text)
@@ -232,6 +247,7 @@ const writeReceiptPdf = (stream, data) => {
   doc.end();
 };
 
+// Arquivo enviado pelo usuário (logotipo, assinatura) dentro de uploads/
 const logoPathFor = (image) =>
   image ? path.join(process.cwd(), "uploads", path.basename(image)) : null;
 
