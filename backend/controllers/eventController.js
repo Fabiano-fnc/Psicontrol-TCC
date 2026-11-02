@@ -1,0 +1,327 @@
+const { google } = require("googleapis");
+const {
+  createEvent: saveEvent,
+  cancelEventByGoogleId,
+} = require("../services/eventService");
+const { syncGoogleCalendarWithDatabase } = require("./authController");
+const { oauth2Client } = require("../config/oauth2");
+const { Event, Calendar, Customer, income } = require("../models");
+
+const authenticateClient = async () => {
+  if (!oauth2Client.credentials || !oauth2Client.credentials.access_token) {
+    try {
+      const tokens = await oauth2Client.refreshAccessToken();
+      oauth2Client.setCredentials(tokens.credentials);
+    } catch (error) {}
+  }
+};
+
+const createEventInGoogleCalendar = async (event, calendarId) => {
+  try {
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+    const response = await calendar.events.insert({
+      calendarId: calendarId,
+      resource: {
+        summary: event.event_name,
+        description: `Evento criado`,
+        start: {
+          dateTime: `${event.date}T${event.start_time}:00`,
+          timeZone: "America/Sao_Paulo",
+        },
+        end: {
+          dateTime: `${event.date}T${event.end_time}:00`,
+          timeZone: "America/Sao_Paulo",
+        },
+      },
+    });
+    return response.data.id;
+  } catch (error) {}
+};
+
+const deleteEventFromGoogleCalendar = async (calendarId, googleEventId) => {
+  try {
+    await authenticateClient();
+
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    await calendar.events.delete({
+      calendarId: calendarId,
+      eventId: googleEventId,
+    });
+  } catch (error) {}
+};
+
+exports.createEvent = async (req, res) => {
+  try {
+    const event = req.body;
+    if (
+      !event ||
+      !event.event_name ||
+      !event.date ||
+      !event.start_time ||
+      !event.end_time ||
+      !event.calendarId
+    ) {
+      return res.status(400).send("Dados inválidos.");
+    }
+
+    const googleEventId = await createEventInGoogleCalendar(
+      event,
+      event.calendarId
+    );
+
+    await saveEvent({
+      ...event,
+      google_event_id: googleEventId,
+    });
+    
+    await syncGoogleCalendarWithDatabase(
+      req.user.user_id,
+      req.user.access_token
+    );
+
+    res.send("Evento criado com sucesso.");
+  } catch (error) {
+    res.status(500).send(error.message);
+  }
+};
+
+exports.deleteEvent = async (req, res) => {
+  const { google_event_id, calendarId } = req.params;
+
+  try {
+    if (!google_event_id || !calendarId) {
+      return res
+        .status(400)
+        .send("Os parâmetros google_event_id e calendarId são necessários.");
+    }
+
+    const existingEvent = await checkEventExists(google_event_id, calendarId);
+    if (!existingEvent) {
+      return res.status(404).send("Evento não encontrado no Google Calendar.");
+    }
+
+    await deleteEventFromGoogleCalendar(calendarId, google_event_id);
+
+    await cancelEventByGoogleId(google_event_id);
+
+    res.send("Evento cancelado com sucesso.");
+  } catch (error) {
+    res.status(500).send(`Erro interno do servidor: ${error.message}`);
+  }
+};
+
+exports.deleteUnmatchedEvent = async (req, res) => {
+  const { google_event_id } = req.params;
+
+  const event = await Event.findOne({
+    where: {
+      user_id: req.user.user_id,
+      customer_id: null,
+      google_event_id: google_event_id,
+    },
+  });
+
+  if (!event) {
+    return res.status(404).send("Evento não encontrado ou já sincronizado.");
+  }
+
+  await event.destroy();
+
+  if (event.google_event_id) {
+    await deleteEventFromGoogleCalendar(
+      event.calendar_id,
+      event.google_event_id
+    );
+  }
+
+  res.send("Evento excluído com sucesso.");
+};
+
+const checkEventExists = async (googleEventId, calendarId) => {
+  try {
+    await authenticateClient();
+    const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+    const event = await calendar.events.get({
+      calendarId: calendarId,
+      eventId: googleEventId,
+    });
+
+    return event.data;
+  } catch (error) {}
+};
+
+exports.getEvents = async (req, res) => {
+  try {
+    const events = await Event.findAll({ 
+      where: { user_id: req.user.user_id },
+      // Isso traz os dados do paciente vinculado automaticamente
+      include: [{
+        model: Customer, // Certifique-se de importar o model Customer aqui
+        attributes: ['name', 'phone'] // Campos que você quer do paciente
+      }]
+    });
+    res.json(events);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Erro interno do servidor.");
+  }
+};
+
+exports.syncCalendar = async (req, res) => {
+
+  try {
+    if (!req.user.access_token) {
+      return res
+        .status(401)
+        .send("Token de autenticação não encontrado. Faça login novamente.");
+    }
+
+    await syncGoogleCalendarWithDatabase(
+      req.user.user_id,
+      req.user.access_token
+    );
+
+    res.json({ message: "Calendário sincronizado com sucesso." });
+  } catch (error) {
+    res.status(500).send("Erro ao sincronizar o calendário.");
+  }
+};
+
+exports.listCalendars = async (req, res) => {
+  oauth2Client.setCredentials({
+    access_token: req.user.access_token,
+    refresh_token: req.user.refresh_token,
+  });
+
+  const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+  let response;
+  try {
+    response = await calendar.calendarList.list();
+  } catch (error) {
+    console.error("Erro ao listar calendários do Google:", error.message);
+    return res.status(401).json({
+      error: "Não foi possível acessar o Google Agenda. Faça login novamente.",
+    });
+  }
+
+  const googleCalendars = response.data.items;
+
+  const userId = req.user.user_id;
+  const dbCalendars = await Calendar.findAll({
+    where: { user_id: userId },
+    attributes: ["calendar_id", "calendar_name", "enabled"],
+  });
+
+  const dbCalendarsMap = dbCalendars.reduce((acc, cal) => {
+    acc[cal.calendar_id] = cal.enabled;
+    return acc;
+  }, {});
+
+  const mergedCalendars = googleCalendars.map((cal) => ({
+    calendar_id: cal.id,
+    calendar_name: cal.summary,
+    enabled: dbCalendarsMap[cal.id] || false,
+  }));
+
+  // Agendas salvas que não existem mais no Google (apagadas ou de outra conta):
+  // continuam na lista para o usuário poder desativar ou remover
+  const googleIds = new Set(googleCalendars.map((cal) => cal.id));
+  const missingCalendars = dbCalendars
+    .filter((cal) => !googleIds.has(cal.calendar_id))
+    .map((cal) => ({
+      calendar_id: cal.calendar_id,
+      calendar_name: cal.calendar_name,
+      enabled: cal.enabled,
+      missing: true,
+    }));
+
+  res.status(200).json([...mergedCalendars, ...missingCalendars]);
+};
+
+// Remove uma agenda salva; só é permitido quando nada depende dela
+exports.deleteSavedCalendar = async (req, res) => {
+  const userId = req.user.user_id;
+  const { calendarId } = req.params;
+
+  const calendar = await Calendar.findOne({
+    where: { user_id: userId, calendar_id: calendarId },
+  });
+  if (!calendar) {
+    return res.status(404).json({ error: "Agenda não encontrada." });
+  }
+
+  const where = { user_id: userId, calendar_id: calendarId };
+  const [customers, entries, events] = await Promise.all([
+    Customer.count({ where }),
+    income.count({ where }),
+    Event.count({ where }),
+  ]);
+  if (customers + entries + events > 0) {
+    return res.status(409).json({
+      error:
+        "Esta agenda tem pacientes, lançamentos ou eventos vinculados. Desative-a em vez de remover.",
+    });
+  }
+
+  await calendar.destroy();
+  res.status(200).json({ message: "Agenda removida." });
+};
+
+// Calendários do usuário já salvos no banco (sem consultar o Google)
+exports.listSavedCalendars = async (req, res) => {
+  const calendars = await Calendar.findAll({
+    where: { user_id: req.user.user_id },
+    attributes: ["calendar_id", "calendar_name", "enabled"],
+    order: [["calendar_name", "ASC"]],
+  });
+  res.status(200).json(calendars);
+};
+
+exports.getEventsByCalendar = async (req, res) => {
+  try {
+    const { calendarId } = req.params;
+
+    const events = await Event.findAll({
+      where: { calendar_id: calendarId, user_id: req.user.user_id },
+    });
+    res.json(events);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar eventos." });
+  }
+};
+
+exports.saveSelectedCalendars = async (req, res) => {
+  const { calendarId } = req.params;
+  const { enabled, calendar_name } = req.body;
+  const userId = req.user.user_id;
+
+  if (!userId) {
+    return res.status(400).json({ error: "ID do usuário não encontrado." });
+  }
+
+  if (!calendarId || calendarId === "undefined") {
+    return res.status(400).json({ error: "ID do calendário inválido." });
+  }
+
+  const calendar = await Calendar.findOne({
+    where: { calendar_id: calendarId, user_id: userId },
+  });
+
+  if (calendar) {
+    await calendar.update({ enabled: !!enabled, calendar_name });
+    return res
+      .status(200)
+      .json({ message: "Calendário atualizado com sucesso!" });
+  } else {
+    await Calendar.create({
+      calendar_id: calendarId,
+      enabled: !!enabled,
+      calendar_name,
+      user_id: userId,
+    });
+    res.status(201).json({ message: "Calendário criado com sucesso!" });
+  }
+};
