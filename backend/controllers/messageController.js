@@ -18,7 +18,7 @@ exports.sendWhatsAppMessage = async (req, res) => {
       .json({ error: "Mensagem não encontrada para o usuário." });
   }
 
-  const customer = await Customer.findOne({ where: { customer_id } });
+  const customer = await Customer.findOne({ where: { customer_id, user_id: userId } });
   if (!customer) {
     return res.status(404).json({ error: "Cliente não encontrado." });
   }
@@ -101,7 +101,7 @@ exports.sendEmailMessage = async (req, res) => {
       .json({ error: "Mensagem não encontrada para o usuário." });
   }
 
-  const customer = await Customer.findOne({ where: { customer_id } });
+  const customer = await Customer.findOne({ where: { customer_id, user_id: userId } });
   if (!customer) {
     return res.status(404).json({ error: "Cliente não encontrado." });
   }
